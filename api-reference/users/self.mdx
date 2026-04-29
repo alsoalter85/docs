@@ -1,0 +1,199 @@
+---
+title: "Manage your ScaleStack user profile"
+description: "Retrieve your current user details, update your display name and username, upload or remove a profile picture, and access your full user record."
+---
+
+The user profile endpoints let you read and update information associated with your ScaleStack account. You can retrieve your basic profile, apply updates to your name and username, and manage your profile picture. All endpoints operate on the authenticated user — the account identified by your API key.
+
+## Get current user
+
+Returns the profile of the currently authenticated user.
+
+```
+GET https://backend.scalestack.ai/v2/users/
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/users/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `UserSelfResponse` object.
+
+<ResponseField name="id" type="string">
+  The unique identifier for your ScaleStack user account.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  The email address associated with your account.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Your full display name.
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Your unique username within ScaleStack.
+</ResponseField>
+
+<ResponseField name="picture" type="string">
+  A URL pointing to your profile picture, or `null` if no picture has been set.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when your account was created.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "id": "usr_1a2b3c",
+  "email": "alex@example.com",
+  "name": "Alex Rivera",
+  "username": "arivera",
+  "picture": "https://cdn.scalestack.ai/avatars/usr_1a2b3c.jpg",
+  "created_at": "2023-11-10T08:00:00Z"
+}
+```
+
+---
+
+## Get full user details
+
+Returns your complete user record, including any additional fields not included in the basic profile response.
+
+```
+GET https://backend.scalestack.ai/v2/users/details/
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/users/details/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns an extended user object with the same core fields as `UserSelfResponse` plus any additional account-level metadata.
+
+---
+
+## Update user profile
+
+Updates your display name and/or username.
+
+```
+PATCH https://backend.scalestack.ai/v2/users/
+```
+
+### Body parameters
+
+<ParamField body="name" type="string">
+  Your new full display name.
+</ParamField>
+
+<ParamField body="username" type="string">
+  Your new username. Must be unique across all ScaleStack accounts.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PATCH https://backend.scalestack.ai/v2/users/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alex J. Rivera",
+    "username": "alexjr"
+  }'
+```
+
+### Response
+
+Returns the updated `UserSelfResponse` object reflecting the changes.
+
+---
+
+## Update display name
+
+A dedicated endpoint to update only your display name.
+
+```
+POST https://backend.scalestack.ai/v2/users/~update/
+```
+
+### Body parameters
+
+<ParamField body="name" type="string" required>
+  Your new display name.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/users/~update/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alex J. Rivera"
+  }'
+```
+
+### Response
+
+Returns the updated user object with your new name applied.
+
+---
+
+## Upload a profile picture
+
+Uploads a new profile picture for your account. Send the image as `multipart/form-data`.
+
+```
+POST https://backend.scalestack.ai/v2/users/picture/
+```
+
+### Body parameters
+
+<ParamField body="file" type="file" required>
+  The image file to use as your profile picture. Supported formats are JPEG, PNG, and WebP.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/users/picture/ \
+  -H "Authorization: Bearer <api_key>" \
+  -F "file=@/path/to/photo.jpg"
+```
+
+### Response
+
+Returns the updated `UserSelfResponse` object with the new `picture` URL.
+
+---
+
+## Delete profile picture
+
+Removes your current profile picture. After deletion, the `picture` field returns `null`.
+
+```
+DELETE https://backend.scalestack.ai/v2/users/picture/
+```
+
+### Example request
+
+```bash
+curl -X DELETE https://backend.scalestack.ai/v2/users/picture/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `204 No Content` response on success. No body is returned.

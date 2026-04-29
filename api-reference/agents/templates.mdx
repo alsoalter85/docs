@@ -1,0 +1,113 @@
+---
+title: "Copy and use agent templates"
+description: "Copy pre-built agent templates into your organization as configured workflows, then generate AI-powered descriptions for agents using the ScaleStack API."
+---
+
+Agent templates are pre-built, ready-to-run agent configurations that ScaleStack makes available to all customers. When you copy a template, ScaleStack creates a new workflow in your organization that is already pre-configured with the template's modules — you can run it immediately or adjust the configuration to fit your needs. Template browsing happens in the ScaleStack product UI; the API endpoints let you copy templates programmatically and generate AI-powered descriptions for agents in your organization.
+
+## Copy an agent template
+
+Copies an agent template into your organization, creating a new workflow pre-configured with the template's modules.
+
+```
+POST https://backend.scalestack.ai/v2/agents/templates/{agent_id}/copy
+```
+
+### Path parameters
+
+<ParamField path="agent_id" type="string" required>
+  The ID of the agent template to copy. You can find template IDs in the ScaleStack UI under the Agents section.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="target_org_id" type="string">
+  The organization to copy the template into. If omitted, the template is copied into your own organization.
+</ParamField>
+
+<ParamField body="name" type="string">
+  A custom display name for the new workflow. If omitted, the workflow inherits the template's name.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/agents/templates/agt_enrichLeads01/copy \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Lead Enrichment — EMEA Campaign"
+  }'
+```
+
+### Response
+
+Returns an `AgentCopyResponse` confirming the new workflow and agent created in your organization.
+
+<ResponseField name="workflow_id" type="string">
+  The ID of the new workflow created from the template. Use this ID with the [Workflows](/api-reference/workflows/get) endpoints to view, run, or update the workflow.
+</ResponseField>
+
+<ResponseField name="agent_id" type="string">
+  The ID of the agent instance created in your organization.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "workflow_id": "wf_abc123",
+  "agent_id": "agt_xyz789"
+}
+```
+
+<Note>
+  After copying a template, you can inspect the resulting workflow using `GET /workflows/{workflow_id}` and adjust its module configuration before running it.
+</Note>
+
+---
+
+## Generate an agent description
+
+Uses AI to generate a natural-language description for an agent based on its configuration. This is useful when building or editing agents programmatically and you want a human-readable summary without writing one manually.
+
+```
+POST https://backend.scalestack.ai/v2/agents/generate-description
+```
+
+### Body parameters
+
+<ParamField body="agent_id" type="string" required>
+  The ID of the agent in your organization for which to generate a description.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/agents/generate-description \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agt_xyz789"
+  }'
+```
+
+### Response
+
+Returns an object containing the AI-generated description string.
+
+<ResponseField name="description" type="string">
+  The AI-generated natural-language description of the agent's purpose and behavior, based on its configured modules.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "description": "This agent enriches a list of company domains with firmographic data — including industry, employee count, and estimated revenue — then appends verified contact emails for key decision-makers."
+}
+```
+
+<Tip>
+  Generated descriptions are not automatically saved. Pass the returned `description` value to the agent update endpoint if you want to persist it.
+</Tip>

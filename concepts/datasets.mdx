@@ -1,0 +1,88 @@
+---
+title: "Datasets: structured data objects in ScaleStack"
+description: "Datasets are persistent tabular data in ScaleStack. Learn how they differ from workflow output, how to create and populate them, and how deduplication works."
+---
+
+A dataset is a standalone tabular data object — a collection of rows and columns — that lives in your ScaleStack organization. Datasets are distinct from workflow run data: while workflow runs hold the enriched output of a specific execution, datasets are persistent objects you create, manage, and reuse across multiple workflows or outside of workflows entirely. You can upload a CSV, push rows via API, or populate a dataset from a workflow run.
+
+## Datasets vs. workflow data
+
+It helps to understand how datasets and workflow data relate:
+
+| | Datasets | Workflow run data |
+|---|---|---|
+| **Lifetime** | Persistent — exists until you delete it | Tied to a specific run |
+| **Creation** | Created explicitly via API or CSV import | Generated automatically when a workflow executes |
+| **Primary use** | Input source, reusable data store | Enriched output of a run |
+| **Standalone access** | Yes — can be read and edited directly | Only through the workflow or run API |
+
+In practice, you'll often use a dataset as the input to a workflow run, then write the enriched results back to another dataset or export them.
+
+## Data structure
+
+Every dataset contains a flat table of rows and columns. You define the column names and types when you create the dataset or when you first import data. Each row is a record — for example, a company, a contact, or a URL.
+
+```json
+{
+  "columns": ["company_name", "domain", "industry"],
+  "rows": [
+    { "company_name": "Acme Corp", "domain": "acme.com", "industry": "Manufacturing" },
+    { "company_name": "Beta Inc",  "domain": "beta.io",  "industry": "SaaS" }
+  ]
+}
+```
+
+You can read and write individual cells, append new rows, and update the dataset's configuration (such as which column serves as the unique identifier for deduplication).
+
+## Creating a dataset
+
+Create a dataset in your organization with:
+
+```http
+POST https://backend.scalestack.ai/v2/datasets/organizations/{org_id}/
+```
+
+Pass a name, optional column definitions, and an initial set of rows. You can also create an empty dataset and populate it with a subsequent import.
+
+To list all datasets in your organization:
+
+```http
+GET https://backend.scalestack.ai/v2/datasets/organizations/{org_id}/
+```
+
+## Deduplication
+
+Datasets support deduplication to prevent duplicate rows from accumulating over time. When you configure a deduplication key (one or more columns that uniquely identify a record), ScaleStack will skip or overwrite existing rows when you push new data that matches on that key.
+
+<Note>
+  Deduplication is applied at write time. If you import rows without a deduplication key configured, all rows are inserted regardless of existing data.
+</Note>
+
+## Exporting as CSV
+
+You can download the full contents of any dataset as a CSV file at any time. This makes it straightforward to move enriched data into external tools like spreadsheets, CRMs, or data warehouses.
+
+## Public datasets
+
+ScaleStack supports making a dataset publicly accessible via a shareable link. When you enable public sharing, anyone with the link can access the dataset at:
+
+```http
+GET https://backend.scalestack.ai/v2/datasets/public/{id}/
+```
+
+<Warning>
+  Public datasets are accessible to anyone with the link, without authentication. Only enable public sharing for data you intend to share externally.
+</Warning>
+
+## Cell-level feedback and validation
+
+Datasets support feedback and comments at the individual cell level. This lets you or your team flag specific values as incorrect, add validation notes, or annotate cells for review. Cell-level feedback is useful when you're auditing enrichment quality or collaborating with others to review a dataset before acting on it.
+
+<CardGroup cols={2}>
+  <Card title="Import data" icon="file-import" href="/guides/import-data">
+    How to load CSV files and push rows into a dataset via API.
+  </Card>
+  <Card title="Export data" icon="file-export" href="/guides/export-data">
+    How to retrieve enriched data and download it as CSV.
+  </Card>
+</CardGroup>

@@ -1,0 +1,196 @@
+---
+title: "Manage OAuth connections"
+description: "Complete the OAuth callback, list your active third-party connections, disconnect a provider, and retrieve a runtime token for use inside a workflow module."
+---
+
+After a user authorizes ScaleStack to access a third-party service, the provider redirects them back with a `code` and `state`. You pass these to the callback endpoint to complete the connection and store it in your organization. You can then view all active connections, disconnect ones you no longer need, and retrieve short-lived runtime tokens that workflow modules use to authenticate against the external service during a run.
+
+## Complete the OAuth callback
+
+Exchanges the authorization code returned by the provider for an access token and saves the connection to your organization.
+
+```
+POST https://backend.scalestack.ai/v2/oauth/callback
+```
+
+### Body parameters
+
+<ParamField body="code" type="string" required>
+  The authorization code returned by the OAuth provider in the callback redirect.
+</ParamField>
+
+<ParamField body="state" type="string" required>
+  The state parameter returned by the provider. ScaleStack uses this to validate the callback and associate it with the original authorization request.
+</ParamField>
+
+<ParamField body="service_name" type="string" required>
+  The machine-readable name of the provider being connected (for example, `salesforce` or `hubspot`). Must match the `service_name` used when generating the authorization URL.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/oauth/callback \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "aPrxBmjKqL9w...",
+    "state": "eyJzZXJ2aWNlIjoic2FsZXNmb3JjZSJ9",
+    "service_name": "salesforce"
+  }'
+```
+
+### Response
+
+Returns a `ConnectionSummary` object for the newly established connection.
+
+<ResponseField name="id" type="string">
+  The unique identifier for this connection. Use this ID to disconnect the connection or retrieve a runtime token.
+</ResponseField>
+
+<ResponseField name="service_name" type="string">
+  The machine-readable provider identifier for this connection.
+</ResponseField>
+
+<ResponseField name="provider_name" type="string">
+  The human-readable provider name, for example `"Salesforce"`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when this connection was established.
+</ResponseField>
+
+<ResponseField name="user_id" type="string">
+  The ID of the ScaleStack user who authorized this connection.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "id": "conn_sf_4829a",
+  "service_name": "salesforce",
+  "provider_name": "Salesforce",
+  "created_at": "2024-04-29T14:35:00Z",
+  "user_id": "usr_1a2b3c"
+}
+```
+
+---
+
+## List active connections
+
+Returns all active OAuth connections for your organization.
+
+```
+GET https://backend.scalestack.ai/v2/oauth/connections
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/oauth/connections \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns an array of `ConnectionSummary` objects. The fields are the same as the callback response above.
+
+### Example response
+
+```json
+[
+  {
+    "id": "conn_sf_4829a",
+    "service_name": "salesforce",
+    "provider_name": "Salesforce",
+    "created_at": "2024-04-29T14:35:00Z",
+    "user_id": "usr_1a2b3c"
+  },
+  {
+    "id": "conn_hs_7721b",
+    "service_name": "hubspot",
+    "provider_name": "HubSpot",
+    "created_at": "2024-04-15T09:10:00Z",
+    "user_id": "usr_1a2b3c"
+  }
+]
+```
+
+---
+
+## Disconnect a connection
+
+Revokes a stored OAuth connection and removes it from your organization. Workflows that depend on this connection will no longer be able to authenticate to the external service until a new connection is established.
+
+```
+POST https://backend.scalestack.ai/v2/oauth/connections/{connection_id}/disconnect
+```
+
+### Path parameters
+
+<ParamField path="connection_id" type="string" required>
+  The ID of the connection to disconnect, as returned by `GET /oauth/connections`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/oauth/connections/conn_sf_4829a/disconnect \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `204 No Content` response on success. No body is returned.
+
+<Warning>
+  Disconnecting a connection is immediate and cannot be undone. Any workflows or modules that rely on this connection will fail until you reconnect the provider.
+</Warning>
+
+---
+
+## Get a runtime token
+
+Returns a short-lived access token for a connection. Workflow modules use this token internally to authenticate against the external service during a run. You typically do not need to call this endpoint directly unless you are building a custom integration or debugging a module.
+
+```
+GET https://backend.scalestack.ai/v2/oauth/connections/{connection_id}/token
+```
+
+### Path parameters
+
+<ParamField path="connection_id" type="string" required>
+  The ID of the connection for which to retrieve a runtime token.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/oauth/connections/conn_sf_4829a/token \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+<ResponseField name="access_token" type="string">
+  A short-lived OAuth access token for the connected service. This token is valid for a limited time and should be used immediately.
+</ResponseField>
+
+<ResponseField name="expires_at" type="string">
+  ISO 8601 timestamp indicating when the token expires.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "access_token": "00D5i000000KXXX!AQEAQFv...",
+  "expires_at": "2024-04-29T15:35:00Z"
+}
+```
+
+<Note>
+  Runtime tokens are automatically managed by ScaleStack during workflow execution. You only need this endpoint if you are making direct API calls to a connected service outside of a workflow run.
+</Note>

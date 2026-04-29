@@ -1,0 +1,189 @@
+---
+title: "Export workflow results from ScaleStack"
+description: "Download enriched workflow results as a CSV file or check Salesforce sync status using the ScaleStack API. Covers export trigger, polling, and download steps."
+---
+
+After a workflow run completes, you can export the enriched output data in several ways. The most common method is downloading a CSV file — ScaleStack generates the file asynchronously and provides a download URL when it's ready. If you've configured a Salesforce integration, you can also check the status of data synced to Salesforce. This guide covers both export paths.
+
+## CSV export
+
+Exporting a CSV is a two-step process: trigger the export to start generating the file, then poll for status until the download URL is available.
+
+<Steps>
+  <Step title="Trigger the CSV export">
+    Send a POST request to initiate CSV generation. You can optionally filter which rows or columns to include in the export using the request body.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/csv/ \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "columns": ["company_name", "linkedin_url", "employee_count", "contact_email"],
+        "filters": []
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    payload = {
+        "columns": ["company_name", "linkedin_url", "employee_count", "contact_email"],
+        "filters": [],
+    }
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/csv/",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+    )
+    export = response.json()
+    print(export["export_id"])  # e.g. "exp_vwx234"
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "export_id": "exp_vwx234",
+      "status": "processing",
+      "workflow_id": "wf_abc123",
+      "requested_at": "2026-04-29T10:20:00Z"
+    }
+    ```
+
+    <Note>Leave `columns` empty or omit it entirely to include all columns in the export.</Note>
+  </Step>
+
+  <Step title="Poll for export status">
+    CSV generation is asynchronous. Poll the export status endpoint until the status is `completed`, then retrieve the download URL from the response.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/export-status/ \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+    import time
+
+    while True:
+        response = requests.get(
+            "https://backend.scalestack.ai/v2/workflows/wf_abc123/export-status/",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        data = response.json()
+        print(f"Export status: {data['status']}")
+        if data["status"] == "completed":
+            download_url = data["download_url"]
+            print(f"Download URL: {download_url}")
+            break
+        elif data["status"] == "failed":
+            print(f"Export failed: {data.get('error')}")
+            break
+        time.sleep(3)
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "export_id": "exp_vwx234",
+      "status": "completed",
+      "workflow_id": "wf_abc123",
+      "download_url": "https://scalestack-exports.s3.amazonaws.com/exports/exp_vwx234/results.csv?X-Amz-Signature=...",
+      "row_count": 250,
+      "completed_at": "2026-04-29T10:20:45Z"
+    }
+    ```
+
+    <Warning>Download URLs are time-limited presigned S3 URLs. Download your file promptly after the export completes.</Warning>
+  </Step>
+
+  <Step title="Download the CSV file">
+    Use the `download_url` from the status response to download the file directly.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -L "https://scalestack-exports.s3.amazonaws.com/exports/exp_vwx234/results.csv?X-Amz-Signature=..." \
+      -o enriched_results.csv
+    ```
+
+    ```python title="Python"
+    import requests
+
+    file_response = requests.get(download_url)
+    with open("enriched_results.csv", "wb") as f:
+        f.write(file_response.content)
+    print("Downloaded enriched_results.csv")
+    ```
+
+    </CodeGroup>
+
+    The downloaded CSV includes one row per workflow input record, with enriched columns appended to the right of your original input columns.
+  </Step>
+</Steps>
+
+---
+
+## Salesforce export status
+
+If your workflow is configured to sync results to Salesforce using a connected Salesforce integration, you can check the status of that sync independently from the CSV export.
+
+<CodeGroup>
+
+```bash title="curl"
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/export-status/salesforce/ \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```python title="Python"
+import requests
+
+response = requests.get(
+    "https://backend.scalestack.ai/v2/workflows/wf_abc123/export-status/salesforce/",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+)
+print(response.json())
+```
+
+</CodeGroup>
+
+**Example response:**
+
+```json title="Response"
+{
+  "workflow_id": "wf_abc123",
+  "salesforce_export": {
+    "status": "completed",
+    "records_upserted": 248,
+    "records_failed": 2,
+    "completed_at": "2026-04-29T10:15:30Z",
+    "errors": [
+      {
+        "row_id": "row_001",
+        "message": "Required field missing: LastName"
+      }
+    ]
+  }
+}
+```
+
+<Note>To use Salesforce export, you must first connect your Salesforce account via OAuth. See the [OAuth integrations guide](/guides/oauth-integrations) for setup instructions.</Note>
+
+## Next steps
+
+- **Connect Salesforce or other tools** — see the [OAuth integrations guide](/guides/oauth-integrations) to set up integrations that enable automated exports.
+- **Export to Databricks** — see the [Databricks integration guide](/guides/databricks) to push enriched data directly to a Delta table.
+- **Schedule regular exports** — combine the [Schedule workflows guide](/guides/schedule-workflow) with export automation to keep downstream systems up to date.

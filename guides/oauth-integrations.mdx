@@ -1,0 +1,252 @@
+---
+title: "Connect third-party integrations via OAuth"
+description: "Connect services like Salesforce and HubSpot to ScaleStack using OAuth so your workflows can read from and write to those platforms automatically."
+---
+
+ScaleStack supports OAuth 2.0 connections to third-party platforms such as Salesforce, HubSpot, and others. Once connected, those integrations become available as inputs and outputs inside your workflow modules — for example, pulling contact records from HubSpot or pushing enriched data back to Salesforce. This guide walks through the full OAuth connection flow using the ScaleStack API.
+
+<Steps>
+  <Step title="List available OAuth providers">
+    Start by retrieving the list of OAuth providers that ScaleStack supports. Each provider has a `service_name` you'll use in subsequent steps.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/oauth/providers \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/oauth/providers",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    providers = response.json()["providers"]
+    for p in providers:
+        print(p["service_name"], p["display_name"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "providers": [
+        {
+          "service_name": "salesforce",
+          "display_name": "Salesforce",
+          "description": "Connect your Salesforce org to read and write CRM records."
+        },
+        {
+          "service_name": "hubspot",
+          "display_name": "HubSpot",
+          "description": "Connect HubSpot to sync contacts and companies."
+        },
+        {
+          "service_name": "google",
+          "display_name": "Google",
+          "description": "Connect Google for Sheets and Drive access."
+        }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Get the authorization URL">
+    Retrieve the authorization URL for the provider you want to connect. ScaleStack generates a unique URL that includes the OAuth state parameter to prevent CSRF attacks.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl "https://backend.scalestack.ai/v2/oauth/providers/salesforce/authorize-url" \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/oauth/providers/salesforce/authorize-url",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    data = response.json()
+    auth_url = data["authorize_url"]
+    state = data["state"]
+    print(f"Redirect user to: {auth_url}")
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "authorize_url": "https://login.salesforce.com/services/oauth2/authorize?client_id=...&redirect_uri=...&state=oauth_state_abc987",
+      "state": "oauth_state_abc987",
+      "expires_at": "2026-04-29T10:35:00Z"
+    }
+    ```
+  </Step>
+
+  <Step title="Redirect the user to authorize">
+    Redirect the user's browser to the `authorize_url`. The user will log in to the third-party service and approve the requested permissions.
+
+    If you're building a server-side integration where there is no user browser session, you can open the URL manually or use an automated OAuth flow if the provider supports it.
+
+    <Note>Store the `state` value from the previous step. You must verify it matches when the callback arrives to protect against CSRF attacks.</Note>
+  </Step>
+
+  <Step title="Handle the OAuth callback">
+    After the user approves the connection, the provider redirects to ScaleStack's callback URL with a `code` and `state` parameter. ScaleStack's backend handles the token exchange automatically when you call the callback endpoint.
+
+    If you are building a custom integration where you receive the callback directly, pass the authorization code and state to ScaleStack:
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/oauth/callback \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "code": "SplxlOBeZQQYbYS6WxSbIA",
+        "state": "oauth_state_abc987",
+        "service_name": "salesforce"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/oauth/callback",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "code": "SplxlOBeZQQYbYS6WxSbIA",
+            "state": "oauth_state_abc987",
+            "service_name": "salesforce",
+        },
+    )
+    connection = response.json()
+    print(connection["connection_id"])  # e.g. "conn_yz1234"
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "connection_id": "conn_yz1234",
+      "service_name": "salesforce",
+      "status": "active",
+      "connected_account": "admin@acmecorp.salesforce.com",
+      "connected_at": "2026-04-29T10:32:00Z"
+    }
+    ```
+
+    ScaleStack stores the OAuth tokens securely. You will never need to handle or store access tokens yourself.
+  </Step>
+
+  <Step title="List active connections">
+    Retrieve all active OAuth connections for your account to verify a connection was established or to find a `connection_id` for use in workflows.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/oauth/connections \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/oauth/connections",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    connections = response.json()["connections"]
+    for c in connections:
+        print(c["connection_id"], c["service_name"], c["status"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "connections": [
+        {
+          "connection_id": "conn_yz1234",
+          "service_name": "salesforce",
+          "status": "active",
+          "connected_account": "admin@acmecorp.salesforce.com",
+          "connected_at": "2026-04-29T10:32:00Z"
+        },
+        {
+          "connection_id": "conn_ab5678",
+          "service_name": "hubspot",
+          "status": "active",
+          "connected_account": "ops@acmecorp.com",
+          "connected_at": "2026-04-15T09:00:00Z"
+        }
+      ]
+    }
+    ```
+
+    Once a connection is active, you can reference it by `connection_id` when configuring workflow modules that use that integration.
+  </Step>
+
+  <Step title="Disconnect an integration">
+    To revoke ScaleStack's access to a third-party service, disconnect the connection. This removes the stored tokens and prevents any further use of the integration.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/oauth/connections/conn_yz1234/disconnect \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/oauth/connections/conn_yz1234/disconnect",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    # Returns 200 on success
+    ```
+
+    </CodeGroup>
+
+    <Warning>Disconnecting an integration immediately invalidates the stored tokens. Any workflow modules configured to use that connection will fail until you reconnect the service.</Warning>
+  </Step>
+</Steps>
+
+## Using connections in workflows
+
+After connecting an integration, you can reference it inside workflow module configurations by its `connection_id`. For example, a Salesforce output module would include:
+
+```json title="Example module config with OAuth connection"
+{
+  "module_id": "mod_salesforce_upsert",
+  "config": {
+    "connection_id": "conn_yz1234",
+    "object_type": "Lead",
+    "match_field": "Email"
+  }
+}
+```
+
+Refer to each module's schema (via `GET /workflows/modules/{module_id}/schema`) to see which configuration fields accept a `connection_id`.
+
+## Next steps
+
+- **Export enriched data to Salesforce** — see the [Export data guide](/guides/export-data) for how to check Salesforce sync status after a workflow run.
+- **Build a workflow using a connected integration** — see the [Build a workflow guide](/guides/build-workflow).

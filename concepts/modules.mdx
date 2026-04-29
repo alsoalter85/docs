@@ -1,0 +1,82 @@
+---
+title: "Modules: composable enrichment steps"
+description: "Modules are composable enrichment steps in a ScaleStack workflow. Each appends output columns to rows. Learn how to browse, configure, and chain them."
+---
+
+A module is a single, self-contained enrichment step. When you build a workflow, you assemble it from one or more modules — each one takes input from your data, performs a specific task (such as looking up a company's industry, finding a contact's email, or scoring a lead), and appends its results as new columns. Modules are designed to be composable: the output columns of one module can feed into the inputs of the next, letting you build sophisticated enrichment pipelines from simple, reusable parts.
+
+## How modules fit into a workflow
+
+Every workflow is an ordered list of modules. ScaleStack runs each module in sequence for every row in your input data. The data grows wider as it moves through the pipeline — each module adds columns, and the final output contains all original input columns plus every column added by every module.
+
+```
+Input row: { company_name, domain }
+  └─ Module 1 (Company Info)   → adds: industry, headcount, founded_year
+  └─ Module 2 (Tech Stack)     → adds: technologies[]
+  └─ Module 3 (Lead Score)     → adds: score, score_reason
+Output row: { company_name, domain, industry, headcount, founded_year, technologies[], score, score_reason }
+```
+
+Because each module only appends columns, you never lose your original input data. You can add, remove, or reorder modules in a workflow and the schema updates automatically.
+
+## Browsing available modules
+
+To see all modules you can use in your workflows, call:
+
+```http
+GET https://backend.scalestack.ai/v2/workflows/modules
+```
+
+The response lists every available module with its `id`, `name`, a short description, and its credit cost.
+
+## Module parameters
+
+Most modules accept parameters — user-configurable options that control how the module behaves. Parameters might include things like which data column to use as input, what confidence threshold to apply, or which geographic market to target.
+
+You define parameter values when you add a module to a workflow. Some parameters are required; others have defaults that work for most cases.
+
+<Note>
+  Parameter validation happens at workflow execution time. If a required parameter is missing or its value is invalid, the run will fail with a descriptive error.
+</Note>
+
+## Input and output schema
+
+Every module has a defined schema that describes exactly what columns it expects as input and what columns it produces as output. You can retrieve a module's full schema with:
+
+```http
+GET https://backend.scalestack.ai/v2/workflows/modules/{module_id}/schema
+```
+
+The schema response includes:
+
+- **Input fields** — the columns the module reads from your data. If a required input column is missing from the workflow data at the point the module runs, execution will fail.
+- **Output fields** — the columns the module appends to each row, including their data types and descriptions.
+
+Use the schema to understand what a module needs and what you'll get back, before you add it to a workflow.
+
+## Chaining modules
+
+Modules chain together naturally because they all operate on the same row object. When you place Module B after Module A, Module B can reference any column that Module A added. This lets you build multi-step pipelines where later modules enrich or score the results of earlier ones.
+
+<Tip>
+  Order your modules so that each one's required inputs are satisfied by earlier modules or by your original input data. Check each module's schema to confirm input dependencies before building the chain.
+</Tip>
+
+## Module pricing
+
+Each module has an individual credit cost per row it processes. You can retrieve the full pricing table with:
+
+```http
+GET https://backend.scalestack.ai/v2/workflows/modules/pricing/
+```
+
+The total cost of a workflow run is the sum of each module's per-row cost multiplied by the number of rows processed. Modules that fail to enrich a row (for example, no match found) may not consume credits — check the pricing response for each module's billing behavior.
+
+<CardGroup cols={2}>
+  <Card title="Workflows" icon="diagram-project" href="/concepts/workflows">
+    See how modules fit into the broader workflow lifecycle.
+  </Card>
+  <Card title="Credits" icon="coins" href="/concepts/credits">
+    Understand how credits are consumed per module run.
+  </Card>
+</CardGroup>

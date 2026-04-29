@@ -1,0 +1,176 @@
+---
+title: "Create a new dataset"
+description: "Create an empty dataset or upload a CSV file using a three-step presigned URL flow. Returns a DatasetDetail object with the dataset ID and initial status."
+---
+
+ScaleStack gives you two ways to create a dataset: you can create an empty dataset programmatically and populate it later, or you can upload an existing CSV file. Both approaches produce the same `DatasetDetail` object once the dataset is ready. The sections below cover direct creation first, followed by the full file upload flow.
+
+## Create an empty dataset
+
+### Path parameters
+
+<ParamField path="org_id" type="string" required>
+  The unique identifier for your organization (e.g. `org_abc123`).
+</ParamField>
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  A display name for the dataset. This will also be used to derive the `string_id` slug.
+</ParamField>
+
+<ParamField body="description" type="string">
+  An optional human-readable description of the dataset's contents or purpose.
+</ParamField>
+
+### Request
+
+```bash
+curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Dataset",
+    "description": "Enriched leads from Q1 outreach campaign"
+  }'
+```
+
+### Response
+
+Returns a `DatasetDetail` object for the newly created dataset.
+
+<ResponseField name="id" type="string">
+  The internal UUID for the dataset.
+</ResponseField>
+
+<ResponseField name="string_id" type="string">
+  A URL-safe slug derived from the dataset name (e.g. `my-dataset`). Use this value in all other dataset endpoint paths.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name you provided.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial status is `pending`. Transitions to `ready` once the dataset is available for use.
+</ResponseField>
+
+<ResponseField name="columns" type="array">
+  Array of `ColumnSchemaItem` objects describing each column. Empty on a freshly created dataset.
+
+  <Expandable title="ColumnSchemaItem fields">
+    <ResponseField name="name" type="string">
+      The column name.
+    </ResponseField>
+    <ResponseField name="type" type="string">
+      The column data type. One of: `string`, `number`, `boolean`, `date`, `url`, `email`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="row_count" type="integer">
+  Number of rows. `0` for a newly created empty dataset.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of dataset creation.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of the most recent update.
+</ResponseField>
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "string_id": "my-dataset",
+  "name": "My Dataset",
+  "status": "pending",
+  "columns": [],
+  "row_count": 0,
+  "created_at": "2024-03-15T10:30:00Z",
+  "updated_at": "2024-03-15T10:30:00Z"
+}
+```
+
+---
+
+## Create a dataset from a CSV file
+
+Importing a file uses a three-step flow: prepare the upload to receive a presigned URL, upload your file directly to that URL, then confirm the upload to trigger ingestion.
+
+<Steps>
+  <Step title="Prepare the file upload">
+    Call the prepare endpoint to register your file and receive a presigned S3 upload URL.
+
+    **Endpoint:** `POST /datasets/organizations/{org_id}/from-file/`
+
+    <ParamField body="file_name" type="string" required>
+      The original filename including extension (e.g. `leads.csv`).
+    </ParamField>
+
+    <ParamField body="content_type" type="string" required>
+      The MIME type of the file. Use `text/csv` for CSV files.
+    </ParamField>
+
+    ```bash
+    curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/from-file/" \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "file_name": "leads.csv",
+        "content_type": "text/csv"
+      }'
+    ```
+
+    The response includes a presigned `upload_url` and the new `dataset_id`:
+
+    ```json
+    {
+      "upload_url": "https://s3.amazonaws.com/scalestack-uploads/org_abc123/leads.csv?X-Amz-Signature=...",
+      "dataset_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+    ```
+  </Step>
+
+  <Step title="Upload your file to the presigned URL">
+    Make a `PUT` request directly to the presigned URL returned in the previous step. Do not include your ScaleStack API key — the presigned URL handles authentication on its own.
+
+    ```bash
+    curl -X PUT "https://s3.amazonaws.com/scalestack-uploads/org_abc123/leads.csv?X-Amz-Signature=..." \
+      -H "Content-Type: text/csv" \
+      --data-binary @leads.csv
+    ```
+
+    A `200` response from S3 means the upload succeeded.
+
+    <Warning>
+      The presigned URL expires after a short window (typically 15 minutes). Complete the upload promptly after calling the prepare endpoint.
+    </Warning>
+  </Step>
+
+  <Step title="Confirm the upload">
+    After the file is uploaded to S3, notify ScaleStack to begin ingesting it into the dataset.
+
+    **Endpoint:** `POST /datasets/organizations/{org_id}/{string_id}/confirm-file-upload/`
+
+    <ParamField body="dataset_id" type="string" required>
+      The `dataset_id` returned by the prepare step.
+    </ParamField>
+
+    ```bash
+    curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/confirm-file-upload/" \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "dataset_id": "550e8400-e29b-41d4-a716-446655440000"
+      }'
+    ```
+
+    ScaleStack will process the CSV in the background. The dataset `status` will be `processing` during ingestion and will transition to `ready` when complete. Poll the [status endpoint](/api-reference/datasets/get#get-dataset-status) to track progress.
+  </Step>
+</Steps>
+
+<Note>
+  For large files, the ingestion step may take several minutes. Your dataset will be available for queries once its status is `ready`.
+</Note>

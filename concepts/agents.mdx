@@ -1,0 +1,65 @@
+---
+title: "Agents: pre-built workflow templates"
+description: "Agent templates are pre-built workflow blueprints for common enrichment tasks. Copy one to your org and customize modules to fit your specific use case."
+---
+
+Agent templates are pre-configured workflow blueprints built for common enrichment use cases. Instead of assembling a workflow from scratch by selecting and configuring modules one by one, you start from a template that already has the right modules in the right order for a specific task — such as enriching a list of companies with firmographic data, finding contact emails for a prospect list, or scoring leads from a CRM export. Templates give you a working foundation you can customize to match your exact requirements.
+
+## How templates relate to workflows
+
+An agent template is a blueprint, not a live workflow. When you copy a template to your organization, ScaleStack creates a new workflow in your account based on that template's configuration. From that point, the new workflow is fully yours — you can add, remove, or reconfigure modules, adjust parameters, and execute it like any other workflow you create.
+
+```
+Agent template (shared blueprint)
+  └─ Copy to your org  →  New workflow in your account
+                              └─ Customize modules and parameters
+                              └─ Execute with your data
+```
+
+Templates are read-only — your customizations never affect the original template, and template updates don't automatically propagate to workflows you've already copied.
+
+## Browsing and copying templates
+
+You can browse available agent templates through the ScaleStack UI or the API. Each template includes a name, description, and the list of modules it contains, so you can evaluate whether it fits your use case before copying.
+
+To copy a template to your organization:
+
+```http
+POST https://backend.scalestack.ai/v2/agents/templates/{agent_id}/copy
+```
+
+This creates a new workflow in your organization that mirrors the template's module configuration. The response includes the `id` of the newly created workflow, which you can then configure and execute.
+
+<Tip>
+  After copying a template, review each module's parameters before your first run. Templates use sensible defaults, but you may want to adjust things like the input column mapping or output thresholds to match your data.
+</Tip>
+
+## Generating a description
+
+If you're building a custom workflow and want a generated description of what it does — useful for documentation or sharing with teammates — you can use:
+
+```http
+POST https://backend.scalestack.ai/v2/agents/generate-description
+```
+
+Pass your workflow configuration and ScaleStack returns a plain-language description of the workflow's purpose and what each module contributes.
+
+## When to use templates vs. building from scratch
+
+<AccordionGroup>
+  <Accordion title="Use a template when...">
+    You're starting a common enrichment task (prospecting, lead scoring, company research) and want a working baseline quickly. Templates encode best practices for module selection and ordering, so you benefit from that structure without having to figure it out yourself.
+  </Accordion>
+  <Accordion title="Build from scratch when...">
+    Your use case is highly specific, you have unusual input data, or you need a non-standard module sequence. Building from scratch gives you full control from the first step.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={2}>
+  <Card title="Workflows" icon="diagram-project" href="/concepts/workflows">
+    Understand the workflow model that agent templates create.
+  </Card>
+  <Card title="Build a workflow" icon="hammer" href="/guides/build-workflow">
+    Step-by-step guide to creating and configuring a workflow.
+  </Card>
+</CardGroup>

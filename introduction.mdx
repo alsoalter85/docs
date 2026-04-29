@@ -1,0 +1,33 @@
+---
+title: "What is ScaleStack?"
+description: "ScaleStack is an AI-powered platform for building data enrichment workflows. Learn the key concepts: workflows, modules, datasets, agents, and credits."
+---
+
+ScaleStack lets you build and run AI-powered data enrichment pipelines through a REST API or the product UI. You define **workflows** made up of composable **modules** — each one performing a specific enrichment task — and run them against your **datasets** at scale. ScaleStack handles the execution, tracks credit usage, and delivers enriched output you can query or export.
+
+## Key concepts
+
+**Workflows** are the core building blocks of ScaleStack. A workflow defines the enrichment logic: which modules run, in what order, and against which input data. You create, configure, and execute workflows through the API or UI.
+
+**Modules** are the individual enrichment steps inside a workflow. Each module performs one task — for example, finding a company's website, looking up an employee's title, or scoring a lead. Modules are composable, so you can chain them together to build multi-step enrichment pipelines.
+
+**Datasets** hold the rows of data that flow through your workflows. You can push rows directly via the API or import them from a file. Datasets are reusable across multiple workflows.
+
+**Agents** are pre-built workflow templates that cover common enrichment use cases. You can use an agent template as a starting point and customize it for your needs.
+
+**Credits** are the unit of usage metering in ScaleStack. Each module execution consumes credits based on the type and volume of work performed. You can query your credit balance and consumption history through the API.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Make your first API call and run a workflow end-to-end in minutes.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Get your API key and start making authenticated requests.
+  </Card>
+  <Card title="Workflows" icon="diagram-project" href="/concepts/workflows">
+    Learn how workflows, modules, and runs fit together.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/overview">
+    Browse every endpoint in the ScaleStack REST API.
+  </Card>
+</CardGroup>

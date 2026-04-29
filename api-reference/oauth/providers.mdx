@@ -1,0 +1,130 @@
+---
+title: "List available OAuth integration providers"
+description: "List supported OAuth providers and get an authorization URL to connect a third-party service like Salesforce or HubSpot to your ScaleStack organization."
+---
+
+ScaleStack integrates with third-party services — such as CRMs, marketing platforms, and data tools — via OAuth. Before you can use these integrations in a workflow, you need to authorize ScaleStack to access your account on the external service. Use these endpoints to discover which providers are available and to initiate the OAuth authorization flow. Once the user approves access in their browser, handle the callback using the [Connections](/api-reference/oauth/connections) endpoint.
+
+## OAuth connection flow
+
+The typical flow for connecting a new OAuth provider looks like this:
+
+<Steps>
+  <Step title="List available providers">
+    Call `GET /oauth/providers` to see which services are available and enabled for your organization.
+  </Step>
+  <Step title="Get the authorization URL">
+    Call `GET /oauth/providers/{service_name}/authorize-url` to retrieve the URL to redirect your user to on the provider's site.
+  </Step>
+  <Step title="Redirect the user">
+    Send the user to the returned `url`. They will log in and grant ScaleStack the requested permissions.
+  </Step>
+  <Step title="Handle the callback">
+    After the user approves access, the provider redirects back to ScaleStack with a `code` and `state`. Pass these to `POST /oauth/callback` to complete the connection. See [Manage OAuth connections](/api-reference/oauth/connections).
+  </Step>
+</Steps>
+
+---
+
+## List OAuth providers
+
+Returns all OAuth providers that ScaleStack supports, along with whether each provider is currently enabled for your organization.
+
+```
+GET https://backend.scalestack.ai/v2/oauth/providers
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/oauth/providers \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns an array of `OAuthProviderSummary` objects.
+
+<ResponseField name="name" type="string">
+  The human-readable display name of the provider, for example `"Salesforce"` or `"HubSpot"`.
+</ResponseField>
+
+<ResponseField name="service_name" type="string">
+  The machine-readable identifier for this provider. Use this value in other OAuth endpoints where `service_name` is required.
+</ResponseField>
+
+<ResponseField name="enabled" type="boolean">
+  Whether this provider is currently enabled and available for your organization to connect.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  A short description of what this integration provides.
+</ResponseField>
+
+<ResponseField name="scopes" type="array">
+  The OAuth permission scopes that ScaleStack requests when connecting to this provider.
+</ResponseField>
+
+### Example response
+
+```json
+[
+  {
+    "name": "Salesforce",
+    "service_name": "salesforce",
+    "enabled": true,
+    "description": "Sync enriched records directly to Salesforce CRM objects.",
+    "scopes": ["api", "refresh_token", "offline_access"]
+  },
+  {
+    "name": "HubSpot",
+    "service_name": "hubspot",
+    "enabled": true,
+    "description": "Push enriched contacts and companies to HubSpot.",
+    "scopes": ["crm.objects.contacts.write", "crm.objects.companies.write"]
+  }
+]
+```
+
+---
+
+## Get an authorization URL
+
+Returns the URL to redirect a user to in order to begin the OAuth authorization flow for a specific provider.
+
+```
+GET https://backend.scalestack.ai/v2/oauth/providers/{service_name}/authorize-url
+```
+
+### Path parameters
+
+<ParamField path="service_name" type="string" required>
+  The machine-readable name of the provider, as returned in the `service_name` field from `GET /oauth/providers` (for example, `salesforce` or `hubspot`).
+</ParamField>
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/oauth/providers/salesforce/authorize-url \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns an `AuthorizeUrlResponse` object.
+
+<ResponseField name="url" type="string">
+  The full authorization URL to redirect the user to. This URL is specific to the provider and includes the necessary OAuth state and client parameters for ScaleStack to complete the connection.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "url": "https://login.salesforce.com/services/oauth2/authorize?client_id=3MVG9...&redirect_uri=https%3A%2F%2Fbackend.scalestack.ai%2Fv2%2Foauth%2Fcallback&response_type=code&state=eyJzZXJ2aWNl..."
+}
+```
+
+<Note>
+  Authorization URLs are single-use and expire after a short period. Generate a new URL for each connection attempt.
+</Note>

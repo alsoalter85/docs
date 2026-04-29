@@ -1,0 +1,41 @@
+---
+title: "Delete a workflow — DELETE /workflows/{id}"
+description: "Soft-delete a workflow by ID. The workflow is removed from your active list and its scheduled runs are cancelled. Data may be recoverable by support."
+---
+
+Deleting a workflow removes it from your active workflow list and prevents it from being executed. This is a **soft delete** — the workflow and its associated data are not immediately destroyed and may be recoverable by contacting ScaleStack support. Any scheduled runs associated with the workflow will be cancelled automatically.
+
+## Request
+
+```bash
+DELETE https://backend.scalestack.ai/v2/workflows/{workflow_id}/
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to delete.
+</ParamField>
+
+## Example request
+
+```bash
+curl -X DELETE https://backend.scalestack.ai/v2/workflows/wf_abc123/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+## Response
+
+A successful deletion returns an HTTP `204 No Content` response with no body.
+
+```
+HTTP/1.1 204 No Content
+```
+
+<Warning>
+  Deleting a workflow will cancel all of its active and scheduled runs. If you only want to stop a currently running execution, use the [pause endpoint](/api-reference/workflows/execute#pause-a-run) instead.
+</Warning>
+
+<Note>
+  Because this is a soft delete, your workflow data may still be recoverable. If you need to restore a deleted workflow, contact ScaleStack support with the workflow ID (`wf_abc123`) and the approximate deletion time.
+</Note>

@@ -1,0 +1,223 @@
+---
+title: "Retrieve and search workflow data"
+description: "Fetch, search, and filter output rows from a completed workflow run. Covers GET data, POST search, POST filter, and column statistics endpoints."
+---
+
+After a workflow run completes, its output data is stored and accessible via the data endpoints. You can retrieve all rows, perform a full-text search across columns, or apply structured filters to narrow results to exactly what you need. These endpoints are read-only and do not trigger new runs.
+
+## Get workflow data
+
+Fetch all output rows produced by the workflow's most recent completed run.
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/data
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow whose data you want to retrieve.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/data \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `WorkflowDataResponse` object.
+
+<ResponseField name="rows" type="array">
+  An array of row objects. Each object represents one output record, with keys corresponding to column names.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  The total number of rows available in the workflow's output.
+</ResponseField>
+
+<ResponseField name="columns" type="array">
+  An array of column name strings describing the fields present in each row.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "total": 3,
+  "columns": ["email", "company_name", "industry", "headcount"],
+  "rows": [
+    {
+      "email": "jane@acme.com",
+      "company_name": "Acme Corp",
+      "industry": "Software",
+      "headcount": 450
+    },
+    {
+      "email": "bob@globex.com",
+      "company_name": "Globex",
+      "industry": "Manufacturing",
+      "headcount": 1200
+    },
+    {
+      "email": "alice@initech.com",
+      "company_name": "Initech",
+      "industry": "Financial Services",
+      "headcount": 90
+    }
+  ]
+}
+```
+
+---
+
+## Search workflow data
+
+Perform a full-text search across workflow output rows. Optionally restrict the search to specific columns.
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows/{workflow_id}/data/search
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to search.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="query" type="string" required>
+  The search string to match against row values.
+</ParamField>
+
+<ParamField body="columns" type="array">
+  An optional list of column names to restrict the search to. If omitted, the search runs across all columns.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/data/search \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Software",
+    "columns": ["industry"]
+  }'
+```
+
+### Example response
+
+```json
+{
+  "total": 1,
+  "columns": ["email", "company_name", "industry", "headcount"],
+  "rows": [
+    {
+      "email": "jane@acme.com",
+      "company_name": "Acme Corp",
+      "industry": "Software",
+      "headcount": 450
+    }
+  ]
+}
+```
+
+---
+
+## Filter workflow data
+
+Apply structured filters to retrieve rows matching specific conditions. This is useful when you need precise, field-level queries rather than free-text search.
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows/{workflow_id}/data/filter/
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to filter.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="filters" type="array" required>
+  An array of filter condition objects. Each object specifies the column, operator, and value to match against.
+
+  <Expandable title="Filter object fields">
+    <ParamField body="column" type="string" required>
+      The name of the column to filter on.
+    </ParamField>
+
+    <ParamField body="operator" type="string" required>
+      The comparison operator. Supported values: `"eq"`, `"neq"`, `"gt"`, `"gte"`, `"lt"`, `"lte"`, `"contains"`, `"not_contains"`.
+    </ParamField>
+
+    <ParamField body="value" type="string | number | boolean" required>
+      The value to compare against.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/data/filter/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": [
+      { "column": "headcount", "operator": "gte", "value": 100 },
+      { "column": "industry", "operator": "eq", "value": "Manufacturing" }
+    ]
+  }'
+```
+
+### Example response
+
+```json
+{
+  "total": 1,
+  "columns": ["email", "company_name", "industry", "headcount"],
+  "rows": [
+    {
+      "email": "bob@globex.com",
+      "company_name": "Globex",
+      "industry": "Manufacturing",
+      "headcount": 1200
+    }
+  ]
+}
+```
+
+---
+
+## Column statistics and values
+
+Two additional endpoints let you inspect the data in individual columns.
+
+**Get column statistics** — returns aggregated stats (min, max, mean, null count) for each column:
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/columns/stats/
+```
+
+**Get distinct column values** — returns all unique values present in a given column, useful for building filter UIs:
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/columns/values/
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/columns/values/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+<Note>
+  Data is only available after at least one workflow run has completed successfully. If you call these endpoints before any run finishes, you will receive an empty `rows` array with `total: 0`.
+</Note>

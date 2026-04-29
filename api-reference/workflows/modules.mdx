@@ -1,0 +1,260 @@
+---
+title: "Browse and configure workflow modules"
+description: "List available enrichment modules, inspect input/output schemas, check per-module credit costs, and validate a workflow configuration before saving it."
+---
+
+Modules are the building blocks of ScaleStack workflows. Each module performs a specific enrichment or automation action — such as looking up a company's employee count, verifying an email address, or pushing data to a CRM. Before adding modules to a workflow, you can use these endpoints to discover what modules are available, understand the fields each module accepts and produces, and preview how much a module costs to run per row.
+
+## List all modules
+
+Returns a paginated list of all modules available in your organization.
+
+```
+GET https://backend.scalestack.ai/v2/workflows/modules
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/modules \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns an array of `ModuleDetail` objects.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the module. Use this value when adding the module to a workflow.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Human-readable display name for the module.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  A short description of what the module does.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The `ModuleType` enum value categorizing this module (for example, `"firmographic"`, `"contact"`, `"email_verification"`).
+</ResponseField>
+
+<ResponseField name="category" type="string">
+  The high-level category grouping for this module, used for display in the UI.
+</ResponseField>
+
+<ResponseField name="parameters" type="object">
+  An object describing the module's configurable parameters. See [Module parameters](#module-parameters) below.
+</ResponseField>
+
+<ResponseField name="sections" type="array">
+  Display sections used to organize the module's UI fields.
+</ResponseField>
+
+### Example response
+
+```json
+[
+  {
+    "id": "mod_firmographics_01",
+    "name": "Company Firmographics",
+    "description": "Enriches company records with industry, employee count, revenue, and founding year.",
+    "type": "firmographic",
+    "category": "Company Data",
+    "parameters": {
+      "user_input": [...],
+      "output_config": [...],
+      "options": {}
+    },
+    "sections": []
+  }
+]
+```
+
+---
+
+## Module parameters
+
+Every module exposes three parameter groups that control how it behaves in a workflow.
+
+**`user_input`** — Fields that you fill in when configuring the module. These map to columns in your input data or fixed values you supply at configuration time (for example, which input column contains the company domain to look up).
+
+**`output_config`** — Defines the columns this module appends to the workflow's output. Each entry describes the column name, data type, and what it contains.
+
+**`options`** — Additional configuration flags and settings specific to the module.
+
+---
+
+## Get module schema
+
+Returns the full input and output JSON schema for a specific module. Use this when you need to understand exactly what fields a module expects and what it produces, for example when building a workflow programmatically.
+
+```
+GET https://backend.scalestack.ai/v2/workflows/modules/{module_id}/schema
+```
+
+### Path parameters
+
+<ParamField path="module_id" type="string" required>
+  The ID of the module whose schema you want to retrieve.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/modules/mod_firmographics_01/schema \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `ModuleInnerSchema` object.
+
+<ResponseField name="input_schema" type="object">
+  A JSON Schema object describing the fields this module expects as input. Use this to ensure your workflow's upstream data matches the module's requirements.
+</ResponseField>
+
+<ResponseField name="output_schema" type="object">
+  A JSON Schema object describing the fields this module appends to the output. Use this to understand what columns are available downstream in the workflow.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "domain": { "type": "string", "description": "Company domain, e.g. acme.com" }
+    },
+    "required": ["domain"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "company_name": { "type": "string" },
+      "industry": { "type": "string" },
+      "employee_count": { "type": "integer" },
+      "estimated_revenue_usd": { "type": "number" }
+    }
+  }
+}
+```
+
+---
+
+## Get module pricing
+
+Returns credit costs for all modules. Use this to estimate the credit consumption of a workflow before running it.
+
+```
+GET https://backend.scalestack.ai/v2/workflows/modules/pricing/
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/modules/pricing/ \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+Returns a `ModulesPricingResponse` object.
+
+<ResponseField name="modules" type="array">
+  An array of `ModulePricingDetail` objects, one per module.
+
+  <Expandable title="ModulePricingDetail properties">
+    <ResponseField name="module_id" type="string">
+      The ID of the module.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      The display name of the module.
+    </ResponseField>
+    <ResponseField name="credits_per_row" type="number">
+      The number of credits consumed each time this module processes one row of data.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "modules": [
+    {
+      "module_id": "mod_firmographics_01",
+      "name": "Company Firmographics",
+      "credits_per_row": 2.5
+    },
+    {
+      "module_id": "mod_email_verify_01",
+      "name": "Email Verification",
+      "credits_per_row": 1.0
+    }
+  ]
+}
+```
+
+---
+
+## Validate a workflow
+
+Checks that a proposed workflow configuration is valid before you save or run it. Use this to catch configuration errors — such as missing required fields or incompatible module sequences — without committing changes.
+
+```
+POST https://backend.scalestack.ai/v2/workflows/validate
+```
+
+### Body parameters
+
+<ParamField body="modules" type="array" required>
+  An array of module configuration objects representing the workflow steps to validate. Each object should follow the same structure used in the `modules` field when creating or updating a workflow.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/validate \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "modules": [
+      {
+        "module_id": "mod_firmographics_01",
+        "input_mapping": { "domain": "$.input.company_domain" }
+      },
+      {
+        "module_id": "mod_email_verify_01",
+        "input_mapping": { "email": "$.input.contact_email" }
+      }
+    ]
+  }'
+```
+
+### Response
+
+Returns a validation result indicating whether the configuration is valid, along with any errors found.
+
+<ResponseField name="valid" type="boolean">
+  `true` if the workflow configuration passes all validation checks; `false` otherwise.
+</ResponseField>
+
+<ResponseField name="errors" type="array">
+  A list of validation error messages. Empty when `valid` is `true`.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "valid": true,
+  "errors": []
+}
+```
+
+<Tip>
+  Call the validate endpoint before saving a workflow definition to catch schema mismatches early, especially when constructing workflows programmatically from user input.
+</Tip>

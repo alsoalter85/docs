@@ -1,0 +1,99 @@
+---
+title: "Create a workflow — POST /workflows"
+description: "Create a new ScaleStack workflow by providing a name and optional modules. Returns a WorkflowDetail object with the workflow ID and initial draft status."
+---
+
+Creating a workflow gives you a persistent, reusable pipeline for data enrichment and automation. At minimum, you must provide a `name`. You can optionally supply a `modules` array to define the workflow's steps at creation time, or add modules later via the Update endpoint.
+
+## Request
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows
+```
+
+### Body parameters
+
+<ParamField body="name" type="string" required>
+  The display name for the new workflow. Must be unique within your organization.
+</ParamField>
+
+<ParamField body="description" type="string">
+  An optional human-readable description of what the workflow does.
+</ParamField>
+
+<ParamField body="modules" type="array">
+  An optional array of module configuration objects that define the workflow's processing steps. If omitted, the workflow is created with no modules and can be configured later.
+</ParamField>
+
+## Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Lead Enrichment - Q2 Campaign",
+    "description": "Enriches inbound leads with firmographic and contact data.",
+    "modules": []
+  }'
+```
+
+## Response
+
+Returns a `WorkflowDetail` object representing the newly created workflow.
+
+<ResponseField name="id" type="string">
+  The unique identifier assigned to the new workflow.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the workflow.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The description provided at creation, if any.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The initial status of the workflow. Newly created workflows start as `draft`.
+</ResponseField>
+
+<ResponseField name="modules" type="array">
+  The list of module configurations attached to this workflow.
+</ResponseField>
+
+<ResponseField name="schema" type="object">
+  The resolved schema describing the workflow's expected input and output columns.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the workflow was created.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of the last update.
+</ResponseField>
+
+<ResponseField name="organization_id" type="string">
+  The ID of the organization that owns this workflow.
+</ResponseField>
+
+## Example response
+
+```json
+{
+  "id": "wf_abc123",
+  "name": "Lead Enrichment - Q2 Campaign",
+  "description": "Enriches inbound leads with firmographic and contact data.",
+  "status": "draft",
+  "modules": [],
+  "schema": {},
+  "created_at": "2024-04-29T12:00:00Z",
+  "updated_at": "2024-04-29T12:00:00Z",
+  "organization_id": "org_xyz789"
+}
+```
+
+<Note>
+  After creating a workflow, use the [Update a workflow](/api-reference/workflows/update) endpoint to add modules and configure processing steps before executing it.
+</Note>

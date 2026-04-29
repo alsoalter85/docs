@@ -1,0 +1,101 @@
+---
+title: "List datasets in an organization"
+description: "Retrieve a paginated list of all datasets in your organization, including processing status, row counts, and column counts for each dataset."
+---
+
+Use this endpoint to fetch all datasets associated with a given organization. The response includes summary metadata for each dataset — such as its current processing status, row count, and column count — which is useful for building dataset pickers, dashboards, or automations that operate across multiple datasets.
+
+## Path parameters
+
+<ParamField path="org_id" type="string" required>
+  The unique identifier for your organization (e.g. `org_abc123`).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="page" type="integer">
+  The page number to retrieve. Defaults to `1`.
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  The number of datasets to return per page. Defaults to `20`. Maximum is `100`.
+</ParamField>
+
+## Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+With pagination:
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/?page=2&page_size=50" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+## Response
+
+Returns an array of `DatasetListItem` objects.
+
+<ResponseField name="id" type="string">
+  The internal UUID for the dataset.
+</ResponseField>
+
+<ResponseField name="string_id" type="string">
+  A human-readable slug identifier for the dataset (e.g. `my-dataset`). Use this in other endpoint paths.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the dataset.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current processing state of the dataset. One of: `pending`, `ready`, `processing`, or `error`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the dataset was created.
+</ResponseField>
+
+<ResponseField name="row_count" type="integer">
+  The number of data rows in the dataset.
+</ResponseField>
+
+<ResponseField name="column_count" type="integer">
+  The number of columns in the dataset schema.
+</ResponseField>
+
+<ResponseField name="organization_id" type="string">
+  The organization this dataset belongs to.
+</ResponseField>
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "string_id": "my-dataset",
+    "name": "My Dataset",
+    "status": "ready",
+    "created_at": "2024-03-15T10:30:00Z",
+    "row_count": 5420,
+    "column_count": 8,
+    "organization_id": "org_abc123"
+  },
+  {
+    "id": "661f9511-f30c-52e5-b827-557766551111",
+    "string_id": "q1-leads",
+    "name": "Q1 Leads",
+    "status": "processing",
+    "created_at": "2024-03-14T08:00:00Z",
+    "row_count": 12000,
+    "column_count": 12,
+    "organization_id": "org_abc123"
+  }
+]
+```
+
+<Note>
+  Datasets with a `status` of `processing` or `pending` may have incomplete row and column counts. Poll the [status endpoint](/api-reference/datasets/get#get-dataset-status) to detect when a dataset is fully ready.
+</Note>

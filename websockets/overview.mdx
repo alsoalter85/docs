@@ -1,0 +1,176 @@
+---
+title: "Real-time updates with ScaleStack WebSockets"
+description: "Connect to ScaleStack WebSockets for live workflow status updates, import progress, and real-time events — without polling the REST API."
+---
+
+ScaleStack exposes WebSocket connections so your application can receive live updates as workflow runs change state, enrichment jobs progress, and other events occur. Instead of repeatedly calling a REST endpoint to check status, you open a persistent connection and receive messages the moment something changes. This approach reduces latency, lowers API usage, and makes it straightforward to build reactive interfaces or automation triggers.
+
+## When to use WebSockets vs polling
+
+Use WebSockets when:
+
+- You need to react to workflow completion immediately (for example, triggering a downstream step as soon as enrichment finishes)
+- You're displaying live progress to a user and want the UI to update without page refreshes
+- You're running long enrichment jobs and want to avoid repeated polling under rate limits
+
+Use polling when:
+
+- You only need the final result and timing is not critical
+- Your infrastructure does not support persistent connections
+- You're building a simple script where a one-time `GET` after a delay is sufficient
+
+## Step 1: Discover available endpoints
+
+Before connecting, call `GET /websocket-info/` to retrieve a `WebSocketInfo` object that describes the WebSocket endpoints available to your account. This lets you discover the correct URL and any connection parameters without hardcoding them.
+
+```bash title="Discover WebSocket endpoints"
+curl https://backend.scalestack.ai/v2/websocket-info/ \
+  -H "Authorization: Bearer <your_api_key>"
+```
+
+The response contains one or more `WebSocketEndpoint` objects. Each entry includes the connection URL and the event types it emits. Inspect this response to find the endpoint for the event type you want — for example, workflow run status changes or import progress.
+
+## Step 2: Connect to a WebSocket
+
+Pass your API key as a query parameter or in the connection headers when opening the WebSocket. The examples below show both approaches in JavaScript and Python.
+
+<CodeGroup>
+```javascript title="JavaScript"
+const response = await fetch('https://backend.scalestack.ai/v2/websocket-info/', {
+  headers: { Authorization: 'Bearer <your_api_key>' },
+});
+const info = await response.json();
+
+// Pick the endpoint relevant to your use case
+const endpoint = info.endpoints.find(e => e.type === 'workflow_runs');
+
+const ws = new WebSocket(`${endpoint.url}?token=<your_api_key>`);
+
+ws.addEventListener('open', () => {
+  console.log('Connected to ScaleStack WebSocket');
+});
+
+ws.addEventListener('message', (event) => {
+  const data = JSON.parse(event.data);
+  handleStatusUpdate(data);
+});
+
+ws.addEventListener('error', (event) => {
+  console.error('WebSocket error:', event);
+});
+
+ws.addEventListener('close', (event) => {
+  console.log('Connection closed:', event.code, event.reason);
+});
+```
+
+```python title="Python"
+import asyncio
+import json
+import httpx
+import websockets
+
+API_KEY = "<your_api_key>"
+BASE_URL = "https://backend.scalestack.ai/v2"
+
+async def connect():
+    # Discover available WebSocket endpoints
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BASE_URL}/websocket-info/",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        info = response.json()
+
+    # Pick the endpoint for workflow run events
+    endpoint = next(e for e in info["endpoints"] if e["type"] == "workflow_runs")
+    ws_url = f"{endpoint['url']}?token={API_KEY}"
+
+    async with websockets.connect(ws_url) as ws:
+        print("Connected to ScaleStack WebSocket")
+        async for raw_message in ws:
+            data = json.loads(raw_message)
+            handle_status_update(data)
+
+def handle_status_update(data):
+    print(f"Run {data['run_id']} status: {data['status']}")
+
+asyncio.run(connect())
+```
+</CodeGroup>
+
+<Note>
+Your API key authenticates the WebSocket connection. Pass it as a `token` query parameter (shown above) or in the `Sec-WebSocket-Protocol` header, depending on what your environment supports. Never expose your API key in client-side code that is shipped to end users.
+</Note>
+
+## Step 3: Handle workflow status messages
+
+Messages arrive as JSON. A workflow status event includes the run ID, the new status, and a timestamp. Common status values are `running`, `completed`, `failed`, and `paused`.
+
+```javascript title="Message handler (JavaScript)"
+function handleStatusUpdate(data) {
+  const { run_id, status, updated_at } = data;
+
+  switch (status) {
+    case 'completed':
+      console.log(`Run ${run_id} finished at ${updated_at}`);
+      // Fetch results or trigger next step
+      break;
+    case 'failed':
+      console.error(`Run ${run_id} failed at ${updated_at}`);
+      // Alert or retry logic
+      break;
+    case 'paused':
+      console.log(`Run ${run_id} paused — waiting for input`);
+      break;
+    default:
+      console.log(`Run ${run_id} is ${status}`);
+  }
+}
+```
+
+```python title="Message handler (Python)"
+def handle_status_update(data):
+    run_id = data["run_id"]
+    status = data["status"]
+    updated_at = data["updated_at"]
+
+    if status == "completed":
+        print(f"Run {run_id} finished at {updated_at}")
+        # Fetch results or trigger next step
+    elif status == "failed":
+        print(f"Run {run_id} failed at {updated_at}")
+        # Alert or retry logic
+    elif status == "paused":
+        print(f"Run {run_id} paused — waiting for input")
+    else:
+        print(f"Run {run_id} is {status}")
+```
+
+<Tip>
+Filter messages by `run_id` if you have multiple workflow runs active at the same time. This lets you route each update to the correct handler or UI component without additional REST calls.
+</Tip>
+
+## Connection lifecycle
+
+WebSocket connections may close due to network interruptions, server-side timeouts, or authentication errors. Build reconnect logic into any long-running process to ensure you don't miss events.
+
+```javascript title="Reconnect with backoff (JavaScript)"
+function connectWithRetry(url, apiKey, attempt = 0) {
+  const ws = new WebSocket(`${url}?token=${apiKey}`);
+
+  ws.addEventListener('close', (event) => {
+    if (!event.wasClean) {
+      const delay = Math.min(1000 * 2 ** attempt, 30000);
+      console.log(`Reconnecting in ${delay}ms...`);
+      setTimeout(() => connectWithRetry(url, apiKey, attempt + 1), delay);
+    }
+  });
+
+  ws.addEventListener('message', (event) => {
+    handleStatusUpdate(JSON.parse(event.data));
+  });
+
+  return ws;
+}
+```

@@ -1,0 +1,274 @@
+---
+title: "Import data into a ScaleStack workflow"
+description: "Load data into a ScaleStack workflow using CSV file upload via a presigned S3 URL or by pushing JSON rows directly through the API import endpoint."
+---
+
+Before a workflow can run, it needs input data. ScaleStack supports two import methods: uploading a CSV file through a presigned S3 URL, or pushing rows directly as JSON through the API. Use the CSV method when you have an existing file to upload; use the API method when you're generating rows programmatically or integrating with another system.
+
+## Method 1: CSV file upload
+
+Uploading a CSV file is a three-step process: request a presigned upload URL, PUT your file directly to S3, then confirm the upload so ScaleStack can process it.
+
+<Steps>
+  <Step title="Request a presigned upload URL">
+    Call the upload URL endpoint to get a temporary S3 presigned URL. Include the filename and MIME type so ScaleStack can configure the upload correctly.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/upload-url/ \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filename": "prospects.csv",
+        "content_type": "text/csv"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/upload-url/",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"filename": "prospects.csv", "content_type": "text/csv"},
+    )
+    result = response.json()
+    upload_url = result["upload_url"]
+    upload_id = result["upload_id"]
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "upload_id": "upl_def456",
+      "upload_url": "https://scalestack-imports.s3.amazonaws.com/uploads/upl_def456?X-Amz-Signature=...",
+      "expires_at": "2026-04-29T11:00:00Z"
+    }
+    ```
+
+    <Warning>Presigned URLs expire after a short window (typically 15 minutes). Upload your file immediately after receiving the URL.</Warning>
+  </Step>
+
+  <Step title="Upload the file to S3">
+    PUT your CSV file directly to the presigned URL. Do not include your API key in this request — authentication is handled by the presigned URL itself.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X PUT "https://scalestack-imports.s3.amazonaws.com/uploads/upl_def456?X-Amz-Signature=..." \
+      -H "Content-Type: text/csv" \
+      --data-binary @prospects.csv
+    ```
+
+    ```python title="Python"
+    with open("prospects.csv", "rb") as f:
+        upload_response = requests.put(
+            upload_url,
+            headers={"Content-Type": "text/csv"},
+            data=f,
+        )
+    upload_response.raise_for_status()
+    ```
+
+    </CodeGroup>
+
+    A successful upload returns HTTP `200` with no body. Any other status code means the upload failed — request a new presigned URL and try again.
+  </Step>
+
+  <Step title="Confirm the upload">
+    After the file reaches S3, tell ScaleStack to process it by confirming the upload. Pass the `upload_id` from step 1.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/confirm-upload/ \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "upload_id": "upl_def456" }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/confirm-upload/",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"upload_id": "upl_def456"},
+    )
+    print(response.json())
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "import_id": "imp_ghi789",
+      "status": "processing",
+      "workflow_id": "wf_abc123",
+      "filename": "prospects.csv"
+    }
+    ```
+  </Step>
+
+  <Step title="Poll for import status">
+    File processing is asynchronous. Poll the import status endpoint until the status reaches `completed` or `failed`.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/import-status/ \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+    import time
+
+    while True:
+        response = requests.get(
+            "https://backend.scalestack.ai/v2/workflows/wf_abc123/import-status/",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        data = response.json()
+        print(f"Import status: {data['status']}, rows: {data.get('rows_imported')}")
+        if data["status"] in ("completed", "failed"):
+            break
+        time.sleep(3)
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "import_id": "imp_ghi789",
+      "status": "completed",
+      "rows_imported": 500,
+      "rows_failed": 0,
+      "completed_at": "2026-04-29T10:08:15Z"
+    }
+    ```
+
+    Once the import shows `completed`, your rows are ready and you can execute the workflow.
+  </Step>
+</Steps>
+
+---
+
+## Method 2: API import (push JSON rows)
+
+If you're working with data programmatically, you can push rows directly as a JSON array without creating a file. This is useful for streaming records from a database, CRM, or another API.
+
+<Steps>
+  <Step title="Push rows to the workflow">
+    Send an array of row objects to the API import endpoint. Each object should match the column names expected by your workflow modules.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/ \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "rows": [
+          {
+            "company_name": "Acme Corp",
+            "website": "acme.com",
+            "contact_email": "sales@acme.com"
+          },
+          {
+            "company_name": "Globex Inc",
+            "website": "globex.io",
+            "contact_email": "info@globex.io"
+          }
+        ]
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    rows = [
+        {
+            "company_name": "Acme Corp",
+            "website": "acme.com",
+            "contact_email": "sales@acme.com",
+        },
+        {
+            "company_name": "Globex Inc",
+            "website": "globex.io",
+            "contact_email": "info@globex.io",
+        },
+    ]
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/import-data/",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"rows": rows},
+    )
+    print(response.json())
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "import_id": "imp_jkl012",
+      "status": "completed",
+      "rows_imported": 2,
+      "rows_failed": 0
+    }
+    ```
+
+    <Note>API imports are processed synchronously for small batches. For large datasets (over a few thousand rows), use the CSV upload method instead for better performance.</Note>
+  </Step>
+
+  <Step title="Check import status">
+    You can verify the import completed successfully using the same status endpoint as the CSV method.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/import-status/ \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/import-status/",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    print(response.json())
+    ```
+
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Next steps
+
+With data loaded into your workflow, you're ready to run it:
+
+- **Execute the workflow** — see the [Build a workflow guide](/guides/build-workflow) for how to trigger a run and retrieve results.
+- **Automate imports on a schedule** — see the [Schedule workflows guide](/guides/schedule-workflow).
+- **Import from Databricks** — see the [Databricks integration guide](/guides/databricks) to pull data directly from a Databricks table.

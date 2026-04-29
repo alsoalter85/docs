@@ -1,0 +1,114 @@
+---
+title: "API error codes and responses"
+description: "HTTP status codes returned by the ScaleStack API, error response body formats, and guidance for debugging the most common failure scenarios."
+---
+
+When a request to the ScaleStack API fails, the response includes an HTTP status code that indicates the category of the problem, and a JSON body with details to help you diagnose the issue. Understanding the error format and what each status code means will help you write more resilient integrations and debug issues faster.
+
+## HTTP status codes
+
+The following table lists all status codes the API returns and what they mean.
+
+| Code | Name | Meaning |
+|---|---|---|
+| `200` | OK | The request succeeded. The response body contains the requested data or a confirmation of the action. |
+| `201` | Created | A new resource was created successfully. The response body contains the newly created object. |
+| `400` | Bad Request | The request was malformed or contained invalid parameters. Check the request body and query parameters. |
+| `401` | Unauthorized | The `Authorization` header is missing or the API key is invalid. |
+| `403` | Forbidden | Your API key is valid, but you do not have permission to perform the requested action. |
+| `404` | Not Found | The requested resource does not exist. Check the ID or path in your request. |
+| `422` | Unprocessable Entity | The request body passed schema validation but contained logically invalid data. The response body includes field-level error details. |
+| `429` | Too Many Requests | You have exceeded the API rate limit. Wait and retry with exponential backoff. |
+| `500` | Internal Server Error | An unexpected error occurred on the server. If this persists, contact ScaleStack support. |
+
+## Error response formats
+
+### 401 Unauthorized
+
+When your API key is missing or invalid, the API returns a `401` response. Check that your `Authorization` header is present and formatted correctly.
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+<Tip>
+The correct header format is `Authorization: Bearer <your_api_key>`. Make sure there is no extra whitespace and that the key itself has not been truncated.
+</Tip>
+
+### 422 Validation error
+
+When the API cannot process your request because the submitted data is invalid, it returns a `422 Unprocessable Entity` response. The body follows the `HTTPValidationError` schema and contains a `detail` array describing every field that failed validation.
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "name"],
+      "msg": "field required",
+      "type": "value_error.missing"
+    },
+    {
+      "loc": ["body", "schedule", "cron"],
+      "msg": "invalid cron expression",
+      "type": "value_error"
+    }
+  ]
+}
+```
+
+Each object in the `detail` array is a `ValidationError` with the following fields:
+
+<ResponseField name="detail" type="ValidationError[]" required>
+  Array of one or more validation errors. Each entry describes a single field failure.
+
+  <Expandable title="ValidationError properties">
+    <ResponseField name="loc" type="array" required>
+      The location of the invalid field as an ordered path. The first element is the input source (`"body"`, `"query"`, `"path"`, or `"header"`). Subsequent elements are the field name and, for nested objects, the key path down to the offending value.
+    </ResponseField>
+
+    <ResponseField name="msg" type="string" required>
+      A human-readable description of the validation failure.
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      A machine-readable error type identifier (for example, `"value_error.missing"`, `"type_error.integer"`, `"value_error"`).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Debugging common errors
+
+### "Not authenticated" (401)
+
+- Confirm the `Authorization` header is included in your request.
+- Verify you are using the format `Bearer <your_api_key>` with no extra characters.
+- Check that the API key has not been revoked. Rotate it from your organization settings if needed.
+
+### "Not found" (404)
+
+- Double-check the resource ID in the URL. IDs are case-sensitive.
+- Confirm the resource belongs to your organization. You cannot access resources owned by other organizations.
+- If you recently deleted the resource, it will no longer be accessible.
+
+### Validation errors (422)
+
+- Read each entry in the `detail` array. The `loc` field tells you exactly which field is invalid.
+- For nested objects, follow the full path in `loc` to find the field — for example, `["body", "schedule", "cron"]` points to `request.body.schedule.cron`.
+- Check the expected types and required fields against the endpoint's parameter documentation.
+
+### Rate limit exceeded (429)
+
+- Reduce your request frequency and add a delay between calls.
+- Implement exponential backoff: start with a 1-second wait, then double it on each successive `429` response.
+- Batch operations where the API supports it to reduce total request count.
+
+### Server errors (500)
+
+- Retry the request after a short delay. Transient server errors often resolve on their own.
+- If the error persists across multiple retries, contact ScaleStack support with the request details and timestamp.
+
+<Warning>
+Do not retry failed `4xx` requests indefinitely. A `400`, `401`, `403`, or `422` indicates a problem with your request that will not resolve on its own. Fix the underlying issue before retrying.
+</Warning>

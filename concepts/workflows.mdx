@@ -1,0 +1,92 @@
+---
+title: "Workflows: pipelines for data enrichment"
+description: "A ScaleStack workflow is an ordered pipeline of modules that enriches input rows. Learn about lifecycle, runs, statuses, versions, and folder organization."
+---
+
+A workflow is the central unit of work in ScaleStack. It defines a named, ordered pipeline of enrichment modules that ScaleStack runs against your input data. Each row you feed into a workflow passes through every module in sequence, and the result is a richer dataset with new columns appended by each step. You can create workflows through the API, manage them in the UI, and trigger runs programmatically or on a schedule.
+
+## Key properties
+
+Every workflow has a set of core properties that describe its structure and current state.
+
+<AccordionGroup>
+  <Accordion title="id and name">
+    Each workflow has a unique `id` used in API calls and a human-readable `name` you assign at creation. Use the name to organize workflows by purpose — for example, `prospect-enrichment` or `crm-cleanup`.
+  </Accordion>
+  <Accordion title="modules">
+    The `modules` field is the ordered list of enrichment steps that make up the workflow. Each module performs one discrete task and adds output columns to the data. See [Modules](/concepts/modules) for details.
+  </Accordion>
+  <Accordion title="schema">
+    The workflow `schema` describes all input and output columns across every module in the pipeline. ScaleStack infers this schema automatically as you add modules, so you always know what columns to expect in the result.
+  </Accordion>
+  <Accordion title="status">
+    A workflow's status reflects its current state. A newly created workflow starts as a draft. Once published, it can be executed. The status can be `draft`, `active`, or `archived`.
+  </Accordion>
+  <Accordion title="folders">
+    You can organize workflows into folders to keep your workspace clean. Folders are purely organizational — they don't affect execution.
+  </Accordion>
+</AccordionGroup>
+
+## Workflow lifecycle
+
+A workflow moves through a predictable lifecycle from creation to results.
+
+<Steps>
+  <Step title="Create">
+    Call `POST /workflows` to create a new workflow. At this point you give it a name and optionally add modules. The workflow starts in draft state.
+  </Step>
+  <Step title="Draft and configure">
+    Use drafts (`POST /workflows/{id}/drafts/create/`) to iterate on a workflow's module configuration without affecting its published version. Drafts let you test changes safely before rolling them out.
+  </Step>
+  <Step title="Execute">
+    Trigger a run with `POST /workflows/{id}/execute`. You can pass input rows directly in the request or reference a dataset. ScaleStack creates a **run** object that tracks progress.
+  </Step>
+  <Step title="Monitor and retrieve results">
+    Poll the run status until it reaches `completed`, then fetch the enriched output rows. If the run fails, the status changes to `failed` and error details are available on the run object.
+  </Step>
+</Steps>
+
+<Tip>
+  For low-latency, synchronous enrichment of a single row, use the live execution endpoint: `POST /workflows/execute/live/`. This returns results directly in the response without creating a run object.
+</Tip>
+
+## Runs and run statuses
+
+Every time you execute a workflow, ScaleStack creates a **run** — a record of that execution. Runs are how you track progress and retrieve output.
+
+| Status | Meaning |
+|---|---|
+| `pending` | The run is queued and waiting to start. |
+| `running` | ScaleStack is actively processing rows. |
+| `completed` | All rows have been processed successfully. |
+| `failed` | Processing stopped due to an error. |
+| `paused` | The run has been paused and can be resumed. |
+
+A run includes metadata like the number of rows processed, start and end timestamps, and any errors encountered.
+
+## Versions
+
+ScaleStack tracks versions of your workflow so you can audit changes and roll back if needed. Each time you publish a draft, a new version is created. You can list all versions with `GET /workflows/{id}/versions/` and compare configurations across versions.
+
+<Note>
+  Runs are always linked to the workflow version that was active at execution time. This means you can change a workflow without affecting in-progress or historical runs.
+</Note>
+
+## Duplicating and organizing workflows
+
+You can duplicate an existing workflow to use it as a starting point for a new one. This copies the module configuration and schema, letting you adapt it without starting from scratch.
+
+Folders keep your workflow list navigable as you scale. You can move workflows between folders at any time — folder membership has no effect on how a workflow executes.
+
+## Rate limits
+
+Each workflow has its own rate limits, which control how often it can be executed within a given time window. Check your workflow's current limits with `GET /workflows/{id}/rate-limits/`.
+
+<CardGroup cols={2}>
+  <Card title="Build a workflow" icon="hammer" href="/guides/build-workflow">
+    Step-by-step guide to creating, configuring, and running your first workflow.
+  </Card>
+  <Card title="Modules" icon="puzzle-piece" href="/concepts/modules">
+    Learn how modules work and how they chain together inside a workflow.
+  </Card>
+</CardGroup>

@@ -1,0 +1,118 @@
+---
+title: "ScaleStack REST API overview"
+description: "Start calling the ScaleStack API: base URL, versioning, authentication, content type, resource groups, pagination, and rate limits explained."
+---
+
+The ScaleStack REST API gives you programmatic access to all platform features — create and execute workflows, manage datasets, configure integrations, and query usage analytics. Every resource is available under a single versioned base URL, and all requests follow consistent conventions for authentication, content type, and error handling.
+
+## Base URL and versioning
+
+All API endpoints are served under version 2 of the API:
+
+```
+https://backend.scalestack.ai/v2
+```
+
+The `/v2` prefix is part of every endpoint path. When the API introduces breaking changes, a new version prefix will be introduced. You can continue using `/v2` endpoints without interruption until a migration is announced.
+
+## Authentication
+
+Every request must include your API key in the `Authorization` header as a Bearer token. You can find your API key in your ScaleStack organization settings.
+
+```http
+Authorization: Bearer <your_api_key>
+```
+
+<Warning>
+Keep your API key secret. Do not include it in client-side code, commit it to version control, or share it publicly. If a key is compromised, rotate it immediately from your organization settings.
+</Warning>
+
+For a full walkthrough of API key management, see the [Authentication](/authentication) page.
+
+## Content type
+
+Include `Content-Type: application/json` on all requests that send a request body (POST, PUT, PATCH). Responses are always returned as JSON.
+
+```http
+Content-Type: application/json
+```
+
+## Example request
+
+The following examples retrieve your user profile by calling `GET /users/`.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url https://backend.scalestack.ai/v2/users/ \
+  --header "Authorization: Bearer <your_api_key>"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://backend.scalestack.ai/v2/users/",
+    headers={"Authorization": "Bearer <your_api_key>"},
+)
+
+print(response.json())
+```
+
+</CodeGroup>
+
+## Resource groups
+
+The API is organized into the following resource groups:
+
+| Resource | Base path | Description |
+|---|---|---|
+| Workflows | `/workflows` | Create, read, update, and delete workflows. Execute runs, manage schedules, import/export definitions, and work with versions and drafts. |
+| Datasets | `/datasets` | Manage datasets and their data. Upload rows, deduplicate records, and control public access. |
+| Agents | `/agents` | Browse agent templates and copy them into your organization. Generate module descriptions using AI. |
+| OAuth | `/oauth` | Configure OAuth provider settings and manage third-party connections such as Salesforce and HubSpot. |
+| Databricks | `/databricks` | Import and export data to and from Databricks. |
+| Users | `/users` | Read and update your own user profile. |
+| Usage | `/usage` | Query analytics about your organization's API usage and credit consumption. |
+| WebSocket info | `/websocket-info/` | Discover WebSocket endpoint URLs for real-time workflow run updates. |
+
+## Pagination
+
+Endpoints that return lists use a consistent paginated response structure. The response object contains an `items` array with the current page of results, plus metadata about the full result set.
+
+<ResponseField name="items" type="array" required>
+  The list of objects for the current page.
+</ResponseField>
+
+<ResponseField name="total" type="integer" required>
+  Total number of objects across all pages.
+</ResponseField>
+
+<ResponseField name="page" type="integer" required>
+  The current page number (1-indexed).
+</ResponseField>
+
+<ResponseField name="size" type="integer" required>
+  The number of items per page.
+</ResponseField>
+
+<ResponseField name="pages" type="integer" required>
+  Total number of pages available given the current page size.
+</ResponseField>
+
+Pass `page` and `size` as query parameters to navigate through results:
+
+```http
+GET /v2/workflows?page=2&size=25
+```
+
+<Note>
+Default page sizes vary by endpoint. Check individual endpoint documentation for defaults and maximum allowed values.
+</Note>
+
+## Rate limiting
+
+The API enforces rate limits to ensure reliable performance for all users. When you exceed the allowed request rate, the API returns a `429 Too Many Requests` response.
+
+When you receive a `429`, wait before retrying. Implement exponential backoff in your client — start with a short delay and increase it with each successive `429` response. See [API error codes and responses](/api-reference/errors) for more detail on error response formats.

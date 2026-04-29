@@ -1,0 +1,82 @@
+---
+title: "Credits: usage-based billing in ScaleStack"
+description: "ScaleStack credits meter usage per module execution. Learn how to check your balance, estimate run costs, and understand what happens when credits run out."
+---
+
+ScaleStack uses a credit-based system to meter usage. Every time a module runs against a row of data, it consumes a set number of credits from your organization's balance. Credits give you fine-grained control over spending: you can see exactly what each module costs before you run it, monitor your remaining balance at any time, and plan your usage accordingly.
+
+## How credits are consumed
+
+Credits are charged at the module level, not the workflow level. When a workflow runs, each module in the pipeline charges its own per-row credit cost for every row it processes. The total cost of a run is:
+
+```
+total credits = sum of (module_cost × rows_processed) for each module in the workflow
+```
+
+For example, if a workflow has three modules with per-row costs of 2, 5, and 1 credits, and you run it against 100 rows, the run costs `(2 + 5 + 1) × 100 = 800` credits.
+
+<Note>
+  Some modules only charge credits when they return a result. If a module finds no match for a given row, it may not consume credits for that row. Check the pricing response for each module's exact billing behavior.
+</Note>
+
+## Checking per-module costs
+
+To see the credit cost for every available module:
+
+```http
+GET https://backend.scalestack.ai/v2/workflows/modules/pricing/
+```
+
+The response lists each module with its `credits_per_row` value. Review this before building a workflow so you can estimate the cost of a run.
+
+## Checking your remaining balance
+
+You can check how many credits remain in your organization's balance at any time:
+
+```http
+POST https://backend.scalestack.ai/v2/workflows/credits/remaining/
+```
+
+**Example request:**
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/credits/remaining/ \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Example response:**
+
+```json
+{
+  "credits_remaining": 48500,
+  "organization_id": "org_01hx..."
+}
+```
+
+Use this endpoint to build safeguards in your integrations — for example, checking remaining credits before kicking off a large run.
+
+## What happens when credits run out
+
+If your organization's credit balance reaches zero, workflow executions will not start and any in-progress runs will stop before processing further rows. Rows that were already processed before the balance ran out are still charged; rows that were not yet processed are not.
+
+<Warning>
+  Runs do not automatically resume after you add more credits. You will need to re-trigger execution for any runs that stopped due to an empty balance.
+</Warning>
+
+## Estimating run costs before executing
+
+You can estimate the credit cost of a planned run before you execute it by combining two API calls:
+
+1. Fetch the module pricing with `GET /workflows/modules/pricing/`
+2. Multiply each module's per-row cost by your expected row count and sum across all modules in the workflow
+
+This gives you a reliable cost estimate with no risk of surprise charges.
+
+<CardGroup cols={2}>
+  <Card title="Modules" icon="puzzle-piece" href="/concepts/modules">
+    See how modules are priced and what each one does.
+  </Card>
+  <Card title="Workflows" icon="diagram-project" href="/concepts/workflows">
+    Understand how workflow runs relate to credit consumption.
+  </Card>
+</CardGroup>

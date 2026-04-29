@@ -1,0 +1,122 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "ScaleStack",
+  "theme": "luma",
+  "colors": {
+    "primary": "#1A1A2E",
+    "light": "#F5F5F5",
+    "dark": "#0D0D1A"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/scalestack"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "authentication",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/workflows",
+              "concepts/modules",
+              "concepts/datasets",
+              "concepts/agents",
+              "concepts/credits"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/build-workflow",
+              "guides/import-data",
+              "guides/schedule-workflow",
+              "guides/export-data",
+              "guides/oauth-integrations",
+              "guides/databricks"
+            ]
+          },
+          {
+            "group": "WebSockets",
+            "pages": [
+              "websockets/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/errors"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "pages": [
+              "api-reference/workflows/list",
+              "api-reference/workflows/create",
+              "api-reference/workflows/get",
+              "api-reference/workflows/update",
+              "api-reference/workflows/delete",
+              "api-reference/workflows/execute",
+              "api-reference/workflows/data",
+              "api-reference/workflows/schedules"
+            ]
+          },
+          {
+            "group": "Datasets",
+            "pages": [
+              "api-reference/datasets/list",
+              "api-reference/datasets/create",
+              "api-reference/datasets/get",
+              "api-reference/datasets/data",
+              "api-reference/datasets/import"
+            ]
+          },
+          {
+            "group": "Agents & Modules",
+            "pages": [
+              "api-reference/agents/templates",
+              "api-reference/workflows/modules"
+            ]
+          },
+          {
+            "group": "OAuth & Integrations",
+            "pages": [
+              "api-reference/oauth/providers",
+              "api-reference/oauth/connections"
+            ]
+          },
+          {
+            "group": "Users & Organizations",
+            "pages": [
+              "api-reference/users/self",
+              "api-reference/users/organizations"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "api-reference/usage/query"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

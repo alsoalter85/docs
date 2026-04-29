@@ -1,0 +1,272 @@
+---
+title: "Retrieve, search, and filter dataset data"
+description: "Fetch rows from a dataset, run full-text searches, apply structured filters, update individual cells, and export data as a CSV file."
+---
+
+After a dataset reaches `ready` status, you can query its rows in several ways: fetch all rows with pagination, run a keyword search across columns, apply precise column-level filters, or download the entire dataset as a CSV. You can also make targeted updates to individual cells without re-uploading the dataset.
+
+---
+
+## Get dataset data
+
+`GET /datasets/organizations/{org_id}/{string_id}/data/`
+
+Returns a paginated list of rows from the dataset.
+
+### Path parameters
+
+<ParamField path="org_id" type="string" required>
+  The unique identifier for your organization (e.g. `org_abc123`).
+</ParamField>
+
+<ParamField path="string_id" type="string" required>
+  The URL-safe slug identifier for the dataset (e.g. `my-dataset`).
+</ParamField>
+
+### Query parameters
+
+<ParamField query="page" type="integer">
+  The page number to retrieve. Defaults to `1`.
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  Number of rows per page. Defaults to `20`. Maximum is `100`.
+</ParamField>
+
+### Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/data/?page=1&page_size=25" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+<ResponseField name="rows" type="array">
+  Array of row objects. Each row is a key-value map where keys are column names.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Total number of rows in the dataset (across all pages).
+</ResponseField>
+
+<ResponseField name="columns" type="array">
+  Ordered list of column names present in the response rows.
+</ResponseField>
+
+```json
+{
+  "rows": [
+    {
+      "company_name": "Acme Corp",
+      "domain": "https://acme.com",
+      "employee_count": 320,
+      "contact_email": "info@acme.com"
+    },
+    {
+      "company_name": "Globex Inc",
+      "domain": "https://globex.io",
+      "employee_count": 85,
+      "contact_email": "hello@globex.io"
+    }
+  ],
+  "total": 5420,
+  "columns": ["company_name", "domain", "employee_count", "contact_email"]
+}
+```
+
+---
+
+## Search dataset data
+
+`POST /datasets/organizations/{org_id}/{string_id}/data/search/`
+
+Performs a full-text search across one or more columns. Useful for finding rows that contain a specific term without knowing the exact field value.
+
+### Request body
+
+<ParamField body="query" type="string" required>
+  The search term to match against row values.
+</ParamField>
+
+<ParamField body="columns" type="array">
+  An optional list of column names to restrict the search to. If omitted, all columns are searched.
+</ParamField>
+
+### Request
+
+```bash
+curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/data/search/" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "acme",
+    "columns": ["company_name", "domain"]
+  }'
+```
+
+### Response
+
+Returns the same `DatasetDataResponse` structure as the GET data endpoint, containing only the rows that matched the query.
+
+```json
+{
+  "rows": [
+    {
+      "company_name": "Acme Corp",
+      "domain": "https://acme.com",
+      "employee_count": 320,
+      "contact_email": "info@acme.com"
+    }
+  ],
+  "total": 1,
+  "columns": ["company_name", "domain", "employee_count", "contact_email"]
+}
+```
+
+---
+
+## Filter dataset data
+
+`POST /datasets/organizations/{org_id}/{string_id}/data/filter/`
+
+Applies structured column-level filters to return a subset of rows. Filters let you express precise conditions such as equality, range, or membership checks.
+
+### Request body
+
+<ParamField body="filters" type="array" required>
+  An array of filter objects. Each filter targets a specific column and applies a condition.
+
+  <Expandable title="Filter object fields">
+    <ParamField body="column" type="string" required>
+      The name of the column to filter on.
+    </ParamField>
+    <ParamField body="operator" type="string" required>
+      The comparison operator. Common values: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`, `in`.
+    </ParamField>
+    <ParamField body="value" type="any" required>
+      The value to compare against. Type should match the column type.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Request
+
+```bash
+curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/data/filter/" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": [
+      { "column": "employee_count", "operator": "gte", "value": 100 },
+      { "column": "contact_email", "operator": "contains", "value": "@gmail.com" }
+    ]
+  }'
+```
+
+### Response
+
+Returns the same `DatasetDataResponse` structure containing only the rows that satisfy all filters.
+
+```json
+{
+  "rows": [
+    {
+      "company_name": "Acme Corp",
+      "domain": "https://acme.com",
+      "employee_count": 320,
+      "contact_email": "team@gmail.com"
+    }
+  ],
+  "total": 43,
+  "columns": ["company_name", "domain", "employee_count", "contact_email"]
+}
+```
+
+---
+
+## Get distinct column values
+
+`GET /datasets/organizations/{org_id}/{string_id}/columns/values/`
+
+Returns the set of distinct values present in a specific column. This is useful for building filter UIs or validating the contents of a column.
+
+### Query parameters
+
+<ParamField query="column" type="string" required>
+  The name of the column to retrieve distinct values for.
+</ParamField>
+
+### Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/columns/values/?column=industry" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+```json
+{
+  "values": ["SaaS", "Fintech", "Healthcare", "E-commerce", "Logistics"]
+}
+```
+
+---
+
+## Update a cell
+
+`POST /datasets/organizations/{org_id}/{string_id}/data/cell/`
+
+Updates the value of a single cell in the dataset, identified by row ID and column name. Use this for targeted corrections without re-uploading or reprocessing the full dataset.
+
+### Request body
+
+<ParamField body="row_id" type="string" required>
+  The unique identifier for the row containing the cell to update.
+</ParamField>
+
+<ParamField body="column_name" type="string" required>
+  The name of the column whose value you want to update.
+</ParamField>
+
+<ParamField body="value" type="any" required>
+  The new value to write into the cell. Must be compatible with the column's type.
+</ParamField>
+
+### Request
+
+```bash
+curl -X POST "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/data/cell/" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "row_id": "row_7f3a2b1c",
+    "column_name": "contact_email",
+    "value": "updated@acme.com"
+  }'
+```
+
+<Note>
+  Cell updates are applied immediately and are reflected in subsequent data fetches. They cannot be batched in a single request — submit one request per cell.
+</Note>
+
+---
+
+## Download dataset as CSV
+
+`GET /datasets/organizations/{org_id}/{string_id}/download/`
+
+Downloads the full dataset as a CSV file. The response body is the raw CSV content with column headers in the first row.
+
+### Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/download/" \
+  -H "Authorization: Bearer <api_key>" \
+  -o my-dataset.csv
+```
+
+The response is returned with `Content-Type: text/csv` and a `Content-Disposition` header suggesting a filename. Pipe the output directly to a file using the `-o` flag as shown above.
+
+<Note>
+  For large datasets, the download may take some time to generate. Ensure your HTTP client is configured to handle long-lived connections or streaming responses.
+</Note>

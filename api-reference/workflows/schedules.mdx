@@ -1,0 +1,271 @@
+---
+title: "Manage workflow schedules"
+description: "Create, list, update, pause, resume, and delete recurring workflow schedules. Covers cron expressions, overlap policies, and execution history retrieval."
+---
+
+Schedules let you run a workflow automatically on a recurring basis using a cron expression. Each schedule is scoped to a single workflow and supports configurable overlap policies to control what happens when a new scheduled run is triggered while the previous one is still running. You can pause and resume individual schedules without deleting them.
+
+## Create a schedule
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to schedule.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="cron" type="string" required>
+  A cron expression defining when the workflow should run. For example, `"0 9 * * 1-5"` runs the workflow at 9:00 AM every weekday.
+</ParamField>
+
+<ParamField body="overlap_policy" type="string" required>
+  Defines the behavior when a scheduled run is triggered while a previous run is still active. One of:
+  - `"skip"` — skip the new run if one is already in progress.
+  - `"allow"` — allow both runs to execute concurrently.
+  - `"cancel"` — cancel the in-progress run and start the new one.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cron": "0 9 * * 1-5",
+    "overlap_policy": "skip"
+  }'
+```
+
+### Response
+
+Returns a `ScheduleResponse` object.
+
+<ResponseField name="id" type="string">
+  The unique identifier for the schedule.
+</ResponseField>
+
+<ResponseField name="workflow_id" type="string">
+  The ID of the workflow this schedule belongs to.
+</ResponseField>
+
+<ResponseField name="cron" type="string">
+  The cron expression that defines the schedule.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the schedule. One of `"active"` or `"paused"`.
+</ResponseField>
+
+<ResponseField name="next_run" type="string">
+  ISO 8601 timestamp of the next scheduled execution.
+</ResponseField>
+
+<ResponseField name="overlap_policy" type="string">
+  The configured overlap policy for this schedule.
+</ResponseField>
+
+### Example response
+
+```json
+{
+  "id": "sched_mno321",
+  "workflow_id": "wf_abc123",
+  "cron": "0 9 * * 1-5",
+  "status": "active",
+  "next_run": "2024-04-30T09:00:00Z",
+  "overlap_policy": "skip"
+}
+```
+
+---
+
+## List schedules
+
+Retrieve all schedules configured for a workflow.
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "sched_mno321",
+    "workflow_id": "wf_abc123",
+    "cron": "0 9 * * 1-5",
+    "status": "active",
+    "next_run": "2024-04-30T09:00:00Z",
+    "overlap_policy": "skip"
+  }
+]
+```
+
+---
+
+## Get a schedule
+
+Fetch a single schedule by its ID.
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow.
+</ParamField>
+
+<ParamField path="schedule_id" type="string" required>
+  The unique ID of the schedule.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321 \
+  -H "Authorization: Bearer <api_key>"
+```
+
+---
+
+## Update a schedule
+
+Replace a schedule's configuration with new values.
+
+```bash
+PUT https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}
+```
+
+### Body parameters
+
+<ParamField body="cron" type="string" required>
+  The updated cron expression.
+</ParamField>
+
+<ParamField body="overlap_policy" type="string" required>
+  The updated overlap policy. One of `"skip"`, `"allow"`, or `"cancel"`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321 \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cron": "0 8 * * *",
+    "overlap_policy": "cancel"
+  }'
+```
+
+---
+
+## Delete a schedule
+
+Permanently remove a schedule. The workflow itself is not affected.
+
+```bash
+DELETE https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}
+```
+
+### Example request
+
+```bash
+curl -X DELETE https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321 \
+  -H "Authorization: Bearer <api_key>"
+```
+
+A successful deletion returns `204 No Content`.
+
+---
+
+## Pause a schedule
+
+Suspend a schedule so it stops triggering new runs. Existing runs are not affected.
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}/pause
+```
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321/pause \
+  -H "Authorization: Bearer <api_key>"
+```
+
+---
+
+## Resume a schedule
+
+Reactivate a paused schedule so it resumes triggering runs at the next scheduled time.
+
+```bash
+POST https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}/resume
+```
+
+### Example request
+
+```bash
+curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321/resume \
+  -H "Authorization: Bearer <api_key>"
+```
+
+---
+
+## Get schedule execution history
+
+Retrieve a log of past executions triggered by a schedule.
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}/schedules/{schedule_id}/history
+```
+
+### Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno321/history \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Example response
+
+```json
+{
+  "total": 2,
+  "results": [
+    {
+      "run_id": "run_xyz789",
+      "status": "completed",
+      "triggered_at": "2024-04-29T09:00:00Z",
+      "completed_at": "2024-04-29T09:18:00Z"
+    },
+    {
+      "run_id": "run_uvw456",
+      "status": "completed",
+      "triggered_at": "2024-04-28T09:00:00Z",
+      "completed_at": "2024-04-28T09:21:00Z"
+    }
+  ]
+}
+```
+
+<Note>
+  Cron expressions use UTC. Make sure to account for your local timezone when writing schedule times.
+</Note>

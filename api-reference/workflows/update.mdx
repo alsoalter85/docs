@@ -1,0 +1,122 @@
+---
+title: "Update a workflow — PUT/PATCH /workflows/{id}"
+description: "Modify a workflow using PUT for a full configuration replace or PATCH for targeted field updates. Returns the updated WorkflowDetail object."
+---
+
+ScaleStack provides two ways to update a workflow. Use `PUT` to replace the entire workflow configuration — this is the standard "save" operation when you've made edits in the workflow builder. Use `PATCH` when you only need to change specific fields without overwriting the rest of the workflow.
+
+## Full update — PUT /workflows/{workflow_id}
+
+A `PUT` request replaces the workflow's configuration with the values you provide. Any fields omitted from the request body will be reset to their defaults, so always include the complete desired state.
+
+### Request
+
+```bash
+PUT https://backend.scalestack.ai/v2/workflows/{workflow_id}
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to update.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="name" type="string" required>
+  The updated display name for the workflow.
+</ParamField>
+
+<ParamField body="description" type="string">
+  An updated description of the workflow.
+</ParamField>
+
+<ParamField body="modules" type="array">
+  The complete ordered array of module configuration objects. This replaces the existing modules list entirely.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://backend.scalestack.ai/v2/workflows/wf_abc123 \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Lead Enrichment - Q2 Campaign (Revised)",
+    "description": "Updated to include LinkedIn enrichment step.",
+    "modules": [
+      {
+        "id": "mod_001",
+        "type": "input",
+        "config": { "source": "csv" }
+      },
+      {
+        "id": "mod_002",
+        "type": "enrich_company",
+        "config": { "fields": ["industry", "headcount", "revenue"] }
+      },
+      {
+        "id": "mod_003",
+        "type": "enrich_linkedin",
+        "config": { "fields": ["linkedin_url", "title"] }
+      }
+    ]
+  }'
+```
+
+### Response
+
+Returns the updated `WorkflowDetail` object. See [Get workflow details](/api-reference/workflows/get) for the full response schema.
+
+---
+
+## Partial update — PATCH /workflows/{workflow_id}
+
+A `PATCH` request lets you update one or more fields without providing the full workflow state. Fields not included in the request body remain unchanged.
+
+### Request
+
+```bash
+PATCH https://backend.scalestack.ai/v2/workflows/{workflow_id}/
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to partially update.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="name" type="string">
+  A new display name for the workflow. Omit to keep the existing name.
+</ParamField>
+
+<ParamField body="description" type="string">
+  A new description. Omit to keep the existing description.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PATCH https://backend.scalestack.ai/v2/workflows/wf_abc123/ \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Lead Enrichment - Final"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": "wf_abc123",
+  "name": "Lead Enrichment - Final",
+  "updated_at": "2024-04-29T16:00:00Z"
+}
+```
+
+<Warning>
+  When using `PUT`, always include the full `modules` array. Omitting it will clear your workflow's module configuration.
+</Warning>

@@ -1,0 +1,205 @@
+---
+title: "Get dataset details and status"
+description: "Fetch full schema and metadata for a dataset, poll its processing status, or access a publicly shared dataset without authentication."
+---
+
+Once you have a dataset's `string_id`, you can fetch its full detail record — including the column schema, row count, and timestamps — or check its current processing status independently. ScaleStack also supports publicly shared datasets that can be accessed without an API key, covered at the end of this page.
+
+---
+
+## Get dataset details
+
+`GET /datasets/organizations/{org_id}/{string_id}/`
+
+Returns the full `DatasetDetail` record, including the complete column schema.
+
+### Path parameters
+
+<ParamField path="org_id" type="string" required>
+  The unique identifier for your organization (e.g. `org_abc123`).
+</ParamField>
+
+<ParamField path="string_id" type="string" required>
+  The URL-safe slug identifier for the dataset (e.g. `my-dataset`).
+</ParamField>
+
+### Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+<ResponseField name="id" type="string">
+  The internal UUID for the dataset.
+</ResponseField>
+
+<ResponseField name="string_id" type="string">
+  The URL-safe slug identifier for the dataset.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the dataset.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current processing state. One of: `pending`, `ready`, `processing`, or `error`.
+</ResponseField>
+
+<ResponseField name="columns" type="array">
+  Ordered list of `ColumnSchemaItem` objects describing the dataset's structure.
+
+  <Expandable title="ColumnSchemaItem fields">
+    <ResponseField name="name" type="string">
+      The column name as it appears in the dataset.
+    </ResponseField>
+    <ResponseField name="type" type="string">
+      The inferred or assigned data type. One of: `string`, `number`, `boolean`, `date`, `url`, `email`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="row_count" type="integer">
+  Total number of data rows in the dataset.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the dataset was created.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of the most recent modification.
+</ResponseField>
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "string_id": "my-dataset",
+  "name": "My Dataset",
+  "status": "ready",
+  "columns": [
+    { "name": "company_name", "type": "string" },
+    { "name": "domain", "type": "url" },
+    { "name": "employee_count", "type": "number" },
+    { "name": "founded_year", "type": "date" },
+    { "name": "is_funded", "type": "boolean" },
+    { "name": "contact_email", "type": "email" }
+  ],
+  "row_count": 5420,
+  "created_at": "2024-03-15T10:30:00Z",
+  "updated_at": "2024-03-15T14:22:00Z"
+}
+```
+
+---
+
+## Get dataset status
+
+`GET /datasets/organizations/{org_id}/{string_id}/status/`
+
+Returns only the current status of a dataset. Use this endpoint to poll for completion after creating a dataset or uploading a file, without fetching the full detail record.
+
+### Path parameters
+
+<ParamField path="org_id" type="string" required>
+  The unique identifier for your organization.
+</ParamField>
+
+<ParamField path="string_id" type="string" required>
+  The URL-safe slug identifier for the dataset.
+</ParamField>
+
+### Request
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/organizations/org_abc123/my-dataset/status/" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response
+
+<ResponseField name="status" type="string">
+  One of: `pending`, `ready`, `processing`, or `error`.
+
+  - `pending` — the dataset has been created but processing has not yet started.
+  - `processing` — ingestion or enrichment is actively running.
+  - `ready` — the dataset is fully available for queries and exports.
+  - `error` — processing failed. Inspect the dataset detail for more information.
+</ResponseField>
+
+```json
+{
+  "status": "ready"
+}
+```
+
+<Note>
+  When polling for status, a reasonable interval is every 5–10 seconds. Avoid polling more frequently than once per second.
+</Note>
+
+---
+
+## Access a public dataset
+
+ScaleStack datasets can be made publicly accessible. Public datasets are read-only and do not require authentication.
+
+### Get public dataset info
+
+`GET /datasets/public/{string_id}/`
+
+<ParamField path="string_id" type="string" required>
+  The `string_id` of the shared dataset.
+</ParamField>
+
+```bash
+curl -X GET "https://backend.scalestack.ai/v2/datasets/public/my-dataset/"
+```
+
+Returns a `PublicDatasetInfo` object:
+
+<ResponseField name="id" type="string">
+  The internal UUID for the dataset.
+</ResponseField>
+
+<ResponseField name="string_id" type="string">
+  The URL-safe slug for the dataset.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the dataset.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The dataset's description, if one was provided.
+</ResponseField>
+
+<ResponseField name="row_count" type="integer">
+  Total number of rows in the dataset.
+</ResponseField>
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "string_id": "my-dataset",
+  "name": "My Dataset",
+  "description": "Publicly shared enriched company list",
+  "row_count": 5420
+}
+```
+
+### Get public dataset data and download
+
+You can also fetch row data and download a CSV from a public dataset without authentication:
+
+```bash
+# Fetch data rows
+curl -X GET "https://backend.scalestack.ai/v2/datasets/public/my-dataset/data/"
+
+# Download as CSV
+curl -X GET "https://backend.scalestack.ai/v2/datasets/public/my-dataset/download/" \
+  -o my-dataset.csv
+```
+
+These endpoints follow the same structure as their authenticated counterparts. See [Retrieve, search, and filter dataset data](/api-reference/datasets/data) for full response field documentation.

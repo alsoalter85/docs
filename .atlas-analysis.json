@@ -1,0 +1,159 @@
+{
+  "projectType": "api-service",
+  "projectName": "ScaleStack",
+  "projectDescription": "ScaleStack is an AI-powered data enrichment and workflow automation platform that lets teams build, execute, and manage data pipelines using composable modules and agent templates.",
+  "theme": "luma",
+  "primaryColor": "#1A1A2E",
+  "lightColor": "#F5F5F5",
+  "darkColor": "#0D0D1A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "authentication",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/workflows",
+              "concepts/modules",
+              "concepts/datasets",
+              "concepts/agents",
+              "concepts/credits"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/build-workflow",
+              "guides/import-data",
+              "guides/schedule-workflow",
+              "guides/export-data",
+              "guides/oauth-integrations",
+              "guides/databricks"
+            ]
+          },
+          {
+            "group": "WebSockets",
+            "pages": [
+              "websockets/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/errors"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "pages": [
+              "api-reference/workflows/list",
+              "api-reference/workflows/create",
+              "api-reference/workflows/get",
+              "api-reference/workflows/update",
+              "api-reference/workflows/delete",
+              "api-reference/workflows/execute",
+              "api-reference/workflows/data",
+              "api-reference/workflows/schedules"
+            ]
+          },
+          {
+            "group": "Datasets",
+            "pages": [
+              "api-reference/datasets/list",
+              "api-reference/datasets/create",
+              "api-reference/datasets/get",
+              "api-reference/datasets/data",
+              "api-reference/datasets/import"
+            ]
+          },
+          {
+            "group": "Agents & Modules",
+            "pages": [
+              "api-reference/agents/templates",
+              "api-reference/workflows/modules"
+            ]
+          },
+          {
+            "group": "OAuth & Integrations",
+            "pages": [
+              "api-reference/oauth/providers",
+              "api-reference/oauth/connections"
+            ]
+          },
+          {
+            "group": "Users & Organizations",
+            "pages": [
+              "api-reference/users/self",
+              "api-reference/users/organizations"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "api-reference/usage/query"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Composable workflow pipelines with AI modules",
+    "Dataset management with deduplication and filtering",
+    "Agent templates for common enrichment tasks",
+    "Automated scheduling of workflow runs",
+    "OAuth integrations with third-party services",
+    "Databricks import/export support",
+    "Real-time WebSocket updates for workflow status",
+    "Credit-based usage metering",
+    "Draft and versioning system for workflows",
+    "CSV import/export for datasets and workflow data"
+  ],
+  "publicApiSurface": [
+    "POST /workflows — Create workflow",
+    "GET /workflows — List workflows",
+    "PUT /workflows/{workflow_id} — Save workflow",
+    "POST /workflows/{workflow_id}/execute — Execute workflow",
+    "GET /workflows/{workflow_id}/status — Get workflow status",
+    "GET /workflows/{workflow_id}/data — Get workflow data",
+    "POST /workflows/{workflow_id}/data/search — Search workflow data",
+    "POST /workflows/{workflow_id}/import-data/ — Trigger API import",
+    "GET /workflows/{workflow_id}/import-status/ — Get import status",
+    "POST /workflows/{workflow_id}/schedules — Create schedule",
+    "GET /workflows/{workflow_id}/schedules — List schedules",
+    "POST /workflows/execute/live/ — Execute live",
+    "GET /datasets/organizations/{org_id}/ — List datasets",
+    "POST /datasets/organizations/{org_id}/ — Create dataset",
+    "GET /datasets/organizations/{org_id}/{id}/data/ — Get dataset data",
+    "POST /datasets/organizations/{org_id}/{id}/deduplicate/ — Deduplicate dataset",
+    "GET /datasets/public/{id}/ — Get public dataset info",
+    "POST /agents/templates/{agent_id}/copy — Copy agent template",
+    "GET /workflows/modules — Get available modules",
+    "GET /workflows/modules/{module_id}/schema — Get module schema",
+    "GET /oauth/providers — List OAuth providers",
+    "POST /oauth/callback — OAuth callback",
+    "GET /oauth/connections — List connections",
+    "GET /databricks/tables — Get Databricks tables",
+    "POST /databricks/import — Trigger Databricks import",
+    "POST /databricks/export — Trigger Databricks export",
+    "POST /usage/query — Query usage metrics",
+    "GET /users/ — Get current user",
+    "PATCH /users/ — Update user profile",
+    "GET /websocket-info/ — Get WebSocket endpoints info"
+  ]
+}

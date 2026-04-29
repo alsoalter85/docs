@@ -1,0 +1,99 @@
+---
+title: "Get workflow details — GET /workflows/{id}"
+description: "Fetch the full configuration of a workflow by its ID, including the ordered modules array and resolved schema. Returns a WorkflowDetail object."
+---
+
+Use this endpoint to fetch the complete configuration of a workflow by its ID. Unlike the List endpoint which returns summary objects, this response includes the full `modules` array and the resolved `schema` — useful when you need to inspect or programmatically replicate a workflow's structure.
+
+## Request
+
+```bash
+GET https://backend.scalestack.ai/v2/workflows/{workflow_id}
+```
+
+### Path parameters
+
+<ParamField path="workflow_id" type="string" required>
+  The unique ID of the workflow to retrieve.
+</ParamField>
+
+## Example request
+
+```bash
+curl https://backend.scalestack.ai/v2/workflows/wf_abc123 \
+  -H "Authorization: Bearer <api_key>"
+```
+
+## Response
+
+Returns a `WorkflowDetail` object.
+
+<ResponseField name="id" type="string">
+  The unique identifier of the workflow.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the workflow.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  The workflow description, if one was set.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the workflow. One of `active`, `draft`, or `archived`.
+</ResponseField>
+
+<ResponseField name="modules" type="array">
+  An ordered array of module configuration objects. Each module represents a processing step in the workflow pipeline.
+</ResponseField>
+
+<ResponseField name="schema" type="object">
+  The resolved schema describing the workflow's input requirements and output columns.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the workflow was created.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of the most recent update.
+</ResponseField>
+
+<ResponseField name="organization_id" type="string">
+  The ID of the organization that owns the workflow.
+</ResponseField>
+
+## Example response
+
+```json
+{
+  "id": "wf_abc123",
+  "name": "Lead Enrichment - Q2 Campaign",
+  "description": "Enriches inbound leads with firmographic and contact data.",
+  "status": "active",
+  "modules": [
+    {
+      "id": "mod_001",
+      "type": "input",
+      "config": { "source": "csv" }
+    },
+    {
+      "id": "mod_002",
+      "type": "enrich_company",
+      "config": { "fields": ["industry", "headcount", "revenue"] }
+    }
+  ],
+  "schema": {
+    "input_columns": ["email", "company_name"],
+    "output_columns": ["email", "company_name", "industry", "headcount", "revenue"]
+  },
+  "created_at": "2024-04-29T12:00:00Z",
+  "updated_at": "2024-04-29T14:30:00Z",
+  "organization_id": "org_xyz789"
+}
+```
+
+<Note>
+  To retrieve just status and high-level metadata without the full module configuration, use the [List workflows](/api-reference/workflows/list) endpoint instead.
+</Note>

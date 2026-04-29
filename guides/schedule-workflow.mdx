@@ -1,0 +1,280 @@
+---
+title: "Schedule automated ScaleStack workflow runs"
+description: "Automate ScaleStack workflow execution on a recurring schedule using cron expressions. Covers overlap policies, pause/resume, and execution history."
+---
+
+Schedules let you run a workflow automatically at a recurring interval without manually triggering each execution. You define a schedule using a standard cron expression and choose an overlap policy that controls what happens if a scheduled run is still in progress when the next one is due to start. This guide walks you through creating and managing schedules for a workflow.
+
+## Overlap policies
+
+Before creating a schedule, choose the right overlap policy for your use case:
+
+| Policy | Behavior |
+|---|---|
+| `skip` | If a run is already in progress when the next trigger fires, skip that trigger entirely. Best for workflows where missing an occasional run is acceptable. |
+| `allow` | Start a new run even if a previous one is still running. Use this when runs are independent and parallel execution is safe. |
+| `cancel` | Cancel the in-progress run and immediately start a new one. Use this when you always want the freshest data from the latest trigger. |
+
+<Steps>
+  <Step title="Create a schedule">
+    Create a schedule by providing a cron expression and an overlap policy. The cron expression uses standard five-field UTC syntax (`minute hour day-of-month month day-of-week`).
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "cron": "0 6 * * 1-5",
+        "overlap_policy": "skip"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "cron": "0 6 * * 1-5",
+            "overlap_policy": "skip",
+        },
+    )
+    schedule = response.json()
+    print(schedule["id"])  # e.g. "sched_mno345"
+    ```
+
+    </CodeGroup>
+
+    The example above runs the workflow at 06:00 UTC every weekday (Monday–Friday).
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "id": "sched_mno345",
+      "workflow_id": "wf_abc123",
+      "cron": "0 6 * * 1-5",
+      "overlap_policy": "skip",
+      "status": "active",
+      "next_run_at": "2026-04-30T06:00:00Z",
+      "created_at": "2026-04-29T10:15:00Z"
+    }
+    ```
+
+    <Tip>Use [crontab.guru](https://crontab.guru) to validate your cron expressions before creating a schedule.</Tip>
+  </Step>
+
+  <Step title="List schedules for a workflow">
+    Retrieve all schedules associated with a workflow to review their configuration and current status.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    schedules = response.json()["schedules"]
+    for s in schedules:
+        print(s["id"], s["cron"], s["status"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "schedules": [
+        {
+          "id": "sched_mno345",
+          "workflow_id": "wf_abc123",
+          "cron": "0 6 * * 1-5",
+          "overlap_policy": "skip",
+          "status": "active",
+          "next_run_at": "2026-04-30T06:00:00Z"
+        }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Update a schedule">
+    To change the cron expression or overlap policy, send a PUT request with the updated fields.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X PUT https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345 \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "cron": "0 8 * * 1-5",
+        "overlap_policy": "cancel"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.put(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "cron": "0 8 * * 1-5",
+            "overlap_policy": "cancel",
+        },
+    )
+    print(response.json())
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Pause and resume a schedule">
+    Pause a schedule to temporarily stop it from triggering new runs without deleting it. Resume it when you're ready to re-enable automatic execution.
+
+    **Pause:**
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/pause \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/pause",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    ```
+
+    </CodeGroup>
+
+    **Resume:**
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/resume \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/resume",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    ```
+
+    </CodeGroup>
+
+    <Note>Pausing a schedule does not affect any currently running workflow execution. It only prevents future scheduled triggers.</Note>
+  </Step>
+
+  <Step title="Check execution history">
+    View the history of runs triggered by a schedule to audit past executions, check for failures, or verify that scheduled runs are completing successfully.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/history \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345/history",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    history = response.json()["executions"]
+    for run in history:
+        print(run["run_id"], run["status"], run["started_at"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "schedule_id": "sched_mno345",
+      "executions": [
+        {
+          "run_id": "run_pqr678",
+          "status": "completed",
+          "started_at": "2026-04-29T06:00:02Z",
+          "completed_at": "2026-04-29T06:07:45Z",
+          "rows_processed": 500
+        },
+        {
+          "run_id": "run_stu901",
+          "status": "completed",
+          "started_at": "2026-04-28T06:00:01Z",
+          "completed_at": "2026-04-28T06:06:12Z",
+          "rows_processed": 487
+        }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Delete a schedule">
+    If you no longer need a schedule, delete it permanently.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X DELETE https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345 \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.delete(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/schedules/sched_mno345",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    # Returns 204 No Content on success
+    ```
+
+    </CodeGroup>
+
+    <Warning>Deleting a schedule is permanent and cannot be undone. If you might need the schedule again, pause it instead.</Warning>
+  </Step>
+</Steps>
+
+## Common cron expressions
+
+| Expression | Runs |
+|---|---|
+| `0 * * * *` | Every hour on the hour |
+| `0 6 * * *` | Every day at 06:00 UTC |
+| `0 6 * * 1-5` | Weekdays at 06:00 UTC |
+| `0 0 * * 0` | Every Sunday at midnight UTC |
+| `0 0 1 * *` | First day of every month at midnight UTC |
+| `*/15 * * * *` | Every 15 minutes |

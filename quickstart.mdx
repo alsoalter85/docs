@@ -1,0 +1,217 @@
+---
+title: "Get started with ScaleStack"
+description: "Run your first ScaleStack enrichment workflow end-to-end: get an API key, create a workflow, add input data, execute it, and fetch the results."
+---
+
+This guide walks you through the full lifecycle of a ScaleStack workflow using the REST API. By the end you will have created a workflow, pushed input data, triggered a run, and retrieved enriched output. All examples use `curl`, but you can use any HTTP client.
+
+<Note>
+  Replace `<your_api_key>` with your actual API key throughout this guide. See [Authentication](/authentication) for instructions on finding your key.
+</Note>
+
+<Steps>
+
+<Step title="Get your API key">
+
+Sign in to your ScaleStack account and go to **Organization Settings → API**. Copy your API key — you will pass it as a Bearer token in every request.
+
+Verify the key is working by calling `GET /users/`:
+
+```bash curl
+curl https://backend.scalestack.ai/v2/users/ \
+  --header "Authorization: Bearer <your_api_key>"
+```
+
+Expected response:
+
+```json
+{
+  "id": "usr_01abc123",
+  "email": "you@example.com",
+  "organization_id": "org_01xyz456"
+}
+```
+
+</Step>
+
+<Step title="Create a workflow">
+
+A workflow defines the enrichment logic that runs against your data. Use `POST /workflows` to create one. At minimum, provide a `name`.
+
+```bash curl
+curl --request POST https://backend.scalestack.ai/v2/workflows \
+  --header "Authorization: Bearer <your_api_key>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "name": "My first workflow"
+  }'
+```
+
+Expected response:
+
+```json
+{
+  "id": "wfl_01def789",
+  "name": "My first workflow",
+  "status": "draft",
+  "created_at": "2026-04-29T10:00:00Z"
+}
+```
+
+Save the `id` — you will use it in every subsequent step. In the examples below it is referred to as `<workflow_id>`.
+
+<Tip>
+  You can also create and configure workflows in the ScaleStack UI, then use the API only for execution and data retrieval.
+</Tip>
+
+</Step>
+
+<Step title="Add input data">
+
+Push the rows you want to enrich using `POST /workflows/{workflow_id}/import-data/`. Send an array of objects where each object represents one input row. The keys become column names.
+
+```bash curl
+curl --request POST "https://backend.scalestack.ai/v2/workflows/<workflow_id>/import-data/" \
+  --header "Authorization: Bearer <your_api_key>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "rows": [
+      { "company": "Acme Corp", "domain": "acme.com" },
+      { "company": "Globex", "domain": "globex.io" }
+    ]
+  }'
+```
+
+Expected response:
+
+```json
+{
+  "import_id": "imp_abc123",
+  "status": "completed",
+  "rows_imported": 2,
+  "rows_failed": 0
+}
+```
+
+</Step>
+
+<Step title="Execute the workflow">
+
+Trigger a run with `POST /workflows/{workflow_id}/execute`. ScaleStack processes your input rows through each module in the workflow and writes the enriched output.
+
+```bash curl
+curl --request POST "https://backend.scalestack.ai/v2/workflows/<workflow_id>/execute" \
+  --header "Authorization: Bearer <your_api_key>" \
+  --header "Content-Type: application/json" \
+  --data '{}'
+```
+
+Expected response:
+
+```json
+{
+  "run_id": "run_01ghi012",
+  "workflow_id": "<workflow_id>",
+  "status": "running",
+  "started_at": "2026-04-29T10:01:00Z"
+}
+```
+
+Save the `run_id` if you want to track this specific run.
+
+</Step>
+
+<Step title="Poll for status">
+
+Workflow runs are asynchronous. Poll `GET /workflows/{workflow_id}/status` until the `status` field is `completed` or `failed`.
+
+```bash curl
+curl "https://backend.scalestack.ai/v2/workflows/<workflow_id>/status" \
+  --header "Authorization: Bearer <your_api_key>"
+```
+
+Example response while running:
+
+```json
+{
+  "workflow_id": "<workflow_id>",
+  "status": "running",
+  "progress": 0.5
+}
+```
+
+Example response when finished:
+
+```json
+{
+  "workflow_id": "<workflow_id>",
+  "status": "completed",
+  "progress": 1.0,
+  "completed_at": "2026-04-29T10:01:45Z"
+}
+```
+
+<Tip>
+  For real-time status updates without polling, use the ScaleStack WebSocket API. See [WebSockets](/websockets/overview) for details.
+</Tip>
+
+<Warning>
+  If `status` is `failed`, check the response for an `error` field describing what went wrong before retrying.
+</Warning>
+
+</Step>
+
+<Step title="Fetch the results">
+
+Once the run completes, retrieve the enriched output rows with `GET /workflows/{workflow_id}/data`.
+
+```bash curl
+curl "https://backend.scalestack.ai/v2/workflows/<workflow_id>/data" \
+  --header "Authorization: Bearer <your_api_key>"
+```
+
+Expected response:
+
+```json
+{
+  "workflow_id": "<workflow_id>",
+  "rows": [
+    {
+      "company": "Acme Corp",
+      "domain": "acme.com",
+      "employee_count": 320,
+      "industry": "Manufacturing"
+    },
+    {
+      "company": "Globex",
+      "domain": "globex.io",
+      "employee_count": 87,
+      "industry": "Technology"
+    }
+  ],
+  "total": 2
+}
+```
+
+Each row now contains the original input columns plus the enriched columns added by your workflow's modules.
+
+</Step>
+
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Build a workflow" icon="hammer" href="/guides/build-workflow">
+    Learn how to add and configure enrichment modules in a workflow.
+  </Card>
+  <Card title="Import data" icon="file-import" href="/guides/import-data">
+    Load data from a CSV file or push rows in bulk via the API.
+  </Card>
+  <Card title="Schedule runs" icon="clock" href="/guides/schedule-workflow">
+    Automate workflow execution on a recurring schedule.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/overview">
+    Browse all available endpoints and their parameters.
+  </Card>
+</CardGroup>

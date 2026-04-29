@@ -1,0 +1,239 @@
+---
+title: "Integrate ScaleStack with Databricks"
+description: "Connect ScaleStack to Databricks to import data from Delta tables into workflows and export enriched results back to Databricks after processing."
+---
+
+ScaleStack integrates directly with Databricks, letting you use Delta tables as a data source for workflow enrichment and as a destination for enriched output. This guide walks through listing available tables, inspecting their schemas, importing data from Databricks into a workflow, and exporting enriched results back to a Delta table.
+
+<Note>Databricks integration requires your ScaleStack account to be connected to a Databricks workspace. Contact your account team if you haven't configured this connection yet.</Note>
+
+<Steps>
+  <Step title="List available Databricks tables">
+    Retrieve the tables in your connected Databricks workspace that ScaleStack can access. This includes tables across all catalogs and schemas your service principal has read/write permissions to.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/databricks/tables \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/databricks/tables",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    tables = response.json()["tables"]
+    for t in tables:
+        print(t["full_name"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "tables": [
+        {
+          "full_name": "main.sales.prospects",
+          "catalog": "main",
+          "schema": "sales",
+          "table": "prospects",
+          "type": "MANAGED",
+          "row_count": 12500
+        },
+        {
+          "full_name": "main.marketing.campaign_contacts",
+          "catalog": "main",
+          "schema": "marketing",
+          "table": "campaign_contacts",
+          "type": "MANAGED",
+          "row_count": 3200
+        }
+      ]
+    }
+    ```
+
+    Use the `full_name` value (e.g. `main.sales.prospects`) to reference a specific table in subsequent requests.
+  </Step>
+
+  <Step title="Inspect a table schema">
+    Before importing, check the table schema to understand which columns are available and their data types. This helps you map Databricks columns to the input fields your workflow modules expect.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl "https://backend.scalestack.ai/v2/databricks/tables/main.sales.prospects/schema" \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    table_name = "main.sales.prospects"
+    response = requests.get(
+        f"https://backend.scalestack.ai/v2/databricks/tables/{table_name}/schema",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    schema = response.json()
+    for col in schema["columns"]:
+        print(col["name"], col["type"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "table": "main.sales.prospects",
+      "columns": [
+        { "name": "company_name", "type": "STRING", "nullable": false },
+        { "name": "website", "type": "STRING", "nullable": true },
+        { "name": "contact_email", "type": "STRING", "nullable": true },
+        { "name": "industry", "type": "STRING", "nullable": true },
+        { "name": "annual_revenue", "type": "LONG", "nullable": true }
+      ]
+    }
+    ```
+
+    Confirm that the table includes the columns required by your workflow modules (check module schemas via `GET /workflows/modules/{module_id}/schema`).
+  </Step>
+
+  <Step title="Import data from Databricks into a workflow">
+    Trigger an import that reads rows from a Databricks table and loads them into a ScaleStack workflow. You can optionally filter which columns to import or specify a SQL filter clause to limit the rows.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/databricks/import \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "workflow_id": "wf_abc123",
+        "table": "main.sales.prospects",
+        "columns": ["company_name", "website", "contact_email"],
+        "filter": "annual_revenue > 1000000"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    payload = {
+        "workflow_id": "wf_abc123",
+        "table": "main.sales.prospects",
+        "columns": ["company_name", "website", "contact_email"],
+        "filter": "annual_revenue > 1000000",
+    }
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/databricks/import",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+    )
+    result = response.json()
+    print(result["import_id"])   # e.g. "dbi_cde567"
+    print(result["rows_queued"]) # e.g. 4821
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "import_id": "dbi_cde567",
+      "workflow_id": "wf_abc123",
+      "table": "main.sales.prospects",
+      "status": "completed",
+      "rows_queued": 4821,
+      "completed_at": "2026-04-29T10:45:00Z"
+    }
+    ```
+
+    <Tip>Omit the `columns` field to import all columns from the table. Omit `filter` to import all rows.</Tip>
+
+    After the import completes, execute your workflow to enrich the imported rows — see the [Build a workflow guide](/guides/build-workflow) for execution steps.
+  </Step>
+
+  <Step title="Export enriched results to Databricks">
+    After your workflow run completes, push the enriched output rows back to a Databricks Delta table. You can write to an existing table (merge or overwrite) or have ScaleStack create a new table.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/databricks/export \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "workflow_id": "wf_abc123",
+        "table": "main.sales.enriched_prospects",
+        "write_mode": "merge",
+        "merge_key": "contact_email"
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    payload = {
+        "workflow_id": "wf_abc123",
+        "table": "main.sales.enriched_prospects",
+        "write_mode": "merge",
+        "merge_key": "contact_email",
+    }
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/databricks/export",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+    )
+    result = response.json()
+    print(result["export_id"])     # e.g. "dbe_fgh890"
+    print(result["rows_written"])  # e.g. 4821
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "export_id": "dbe_fgh890",
+      "workflow_id": "wf_abc123",
+      "table": "main.sales.enriched_prospects",
+      "write_mode": "merge",
+      "rows_written": 4821,
+      "rows_updated": 1203,
+      "rows_inserted": 3618,
+      "completed_at": "2026-04-29T11:02:00Z"
+    }
+    ```
+
+    **Write mode options:**
+
+    | Mode | Behavior |
+    |---|---|
+    | `merge` | Upsert rows into the target table using the `merge_key` column to match existing records. |
+    | `overwrite` | Replace all rows in the target table with the workflow output. |
+    | `append` | Add all rows from the workflow output without modifying existing records. |
+
+    <Warning>Using `overwrite` mode replaces all existing data in the target table. Verify you're writing to the correct table before using this mode.</Warning>
+  </Step>
+</Steps>
+
+## Next steps
+
+- **Schedule recurring imports and exports** — combine the [Schedule workflows guide](/guides/schedule-workflow) with Databricks import/export to keep your Delta tables continuously enriched.
+- **Export to CSV** — see the [Export data guide](/guides/export-data) if you need a flat file in addition to your Databricks output.
+- **Build the workflow** — see the [Build a workflow guide](/guides/build-workflow) for the full end-to-end run and retrieval flow between import and export.

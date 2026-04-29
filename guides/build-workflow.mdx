@@ -1,0 +1,295 @@
+---
+title: "Build your first ScaleStack workflow"
+description: "Discover modules, create a workflow, execute a run, and retrieve enriched output data using the ScaleStack API — end-to-end with curl and Python examples."
+---
+
+Workflows are the core unit of work in ScaleStack. Each workflow is a named pipeline made up of one or more modules — each module performs a specific enrichment task and adds columns to your input rows. This guide walks you through creating a workflow from scratch, running it, and retrieving the results.
+
+<Steps>
+  <Step title="List available modules">
+    Before building your workflow, discover which modules are available to use. The `/workflows/modules` endpoint returns a list of all modules your account can access.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/modules \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/modules",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    modules = response.json()
+    print(modules)
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "modules": [
+        {
+          "id": "mod_linkedin_enrich",
+          "name": "LinkedIn Company Enrichment",
+          "description": "Enriches company records with LinkedIn data including headcount, industry, and funding."
+        },
+        {
+          "id": "mod_email_verify",
+          "name": "Email Verification",
+          "description": "Validates email deliverability and returns a risk score."
+        }
+      ]
+    }
+    ```
+
+    Note the `id` values — you'll use them when creating your workflow.
+  </Step>
+
+  <Step title="Inspect a module schema">
+    Each module has a schema that describes its required inputs and available configuration options. Fetch the schema for any module before adding it to a workflow.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/modules/mod_linkedin_enrich/schema \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/modules/mod_linkedin_enrich/schema",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    print(response.json())
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "module_id": "mod_linkedin_enrich",
+      "inputs": [
+        { "name": "company_name", "type": "string", "required": true },
+        { "name": "website", "type": "string", "required": false }
+      ],
+      "outputs": [
+        { "name": "linkedin_url", "type": "string" },
+        { "name": "employee_count", "type": "integer" },
+        { "name": "industry", "type": "string" }
+      ]
+    }
+    ```
+
+    Use this schema to ensure your input data includes the required columns and to understand what enriched columns the module will add.
+  </Step>
+
+  <Step title="Create a workflow">
+    Create a new workflow by providing a name and the list of module IDs you want to include. Modules run in the order you specify them.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Prospect enrichment pipeline",
+        "modules": [
+          { "module_id": "mod_linkedin_enrich" },
+          { "module_id": "mod_email_verify" }
+        ]
+      }'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    payload = {
+        "name": "Prospect enrichment pipeline",
+        "modules": [
+            {"module_id": "mod_linkedin_enrich"},
+            {"module_id": "mod_email_verify"},
+        ],
+    }
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+    )
+    workflow = response.json()
+    print(workflow["id"])  # e.g. "wf_abc123"
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "id": "wf_abc123",
+      "name": "Prospect enrichment pipeline",
+      "modules": [
+        { "module_id": "mod_linkedin_enrich" },
+        { "module_id": "mod_email_verify" }
+      ],
+      "created_at": "2026-04-29T10:00:00Z"
+    }
+    ```
+
+    Save the `id` value — you'll use `wf_abc123` in all subsequent requests for this workflow.
+  </Step>
+
+  <Step title="Execute the workflow">
+    Trigger a run of your workflow. Before executing, make sure you have imported data into the workflow (see the [Import data guide](/guides/import-data)).
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl -X POST https://backend.scalestack.ai/v2/workflows/wf_abc123/execute \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{}'
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.post(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/execute",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={},
+    )
+    run = response.json()
+    print(run["run_id"])  # e.g. "run_xyz789"
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "run_id": "run_xyz789",
+      "workflow_id": "wf_abc123",
+      "status": "running",
+      "started_at": "2026-04-29T10:05:00Z"
+    }
+    ```
+  </Step>
+
+  <Step title="Poll for run status">
+    Workflow runs are asynchronous. Poll the status endpoint until the run reaches `completed` or `failed`.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/status \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+    import time
+
+    while True:
+        response = requests.get(
+            "https://backend.scalestack.ai/v2/workflows/wf_abc123/status",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        status = response.json()["status"]
+        print(f"Status: {status}")
+        if status in ("completed", "failed"):
+            break
+        time.sleep(5)
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "run_id": "run_xyz789",
+      "workflow_id": "wf_abc123",
+      "status": "completed",
+      "rows_total": 250,
+      "rows_processed": 250,
+      "completed_at": "2026-04-29T10:12:30Z"
+    }
+    ```
+
+    <Tip>Poll every 5–10 seconds. Most workflows finish within a few minutes depending on row count and module complexity.</Tip>
+  </Step>
+
+  <Step title="Retrieve results">
+    Once the run is `completed`, fetch the enriched output data.
+
+    <CodeGroup>
+
+    ```bash title="curl"
+    curl https://backend.scalestack.ai/v2/workflows/wf_abc123/data \
+      -H "Authorization: Bearer $API_KEY"
+    ```
+
+    ```python title="Python"
+    import requests
+
+    response = requests.get(
+        "https://backend.scalestack.ai/v2/workflows/wf_abc123/data",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    data = response.json()
+    print(data["rows"])
+    ```
+
+    </CodeGroup>
+
+    **Example response:**
+
+    ```json title="Response"
+    {
+      "workflow_id": "wf_abc123",
+      "rows": [
+        {
+          "company_name": "Acme Corp",
+          "website": "acme.com",
+          "linkedin_url": "https://linkedin.com/company/acme-corp",
+          "employee_count": 320,
+          "industry": "Software",
+          "email_valid": true,
+          "email_risk_score": 0.05
+        }
+      ],
+      "total_rows": 250,
+      "page": 1
+    }
+    ```
+
+    <Note>Results are paginated. Use the `page` query parameter to retrieve additional pages: `GET /workflows/wf_abc123/data?page=2`.</Note>
+  </Step>
+</Steps>
+
+## Next steps
+
+Now that your workflow is running and returning enriched data, you can:
+
+- **Import larger datasets** — see the [Import data guide](/guides/import-data) for CSV upload and bulk API import.
+- **Automate runs on a schedule** — see the [Schedule workflows guide](/guides/schedule-workflow).
+- **Export results** — see the [Export data guide](/guides/export-data) to download a CSV or push data to Salesforce.
