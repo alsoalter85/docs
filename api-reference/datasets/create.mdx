@@ -3,7 +3,7 @@ title: "Create a new dataset"
 description: "Create an empty dataset or upload a CSV file using a three-step presigned URL flow. Returns a DatasetDetail object with the dataset ID and initial status."
 ---
 
-ScaleStack gives you two ways to create a dataset: you can create an empty dataset programmatically and populate it later, or you can upload an existing CSV file. Both approaches produce the same `DatasetDetail` object once the dataset is ready. The sections below cover direct creation first, followed by the full file upload flow.
+Scalestack gives you two ways to create a dataset: you can create an empty dataset programmatically and populate it later, or you can upload an existing CSV file. Both approaches produce the same `DatasetDetail` object once the dataset is ready. The sections below cover direct creation first, followed by the full file upload flow.
 
 ## Create an empty dataset
 
@@ -134,7 +134,7 @@ Importing a file uses a three-step flow: prepare the upload to receive a presign
   </Step>
 
   <Step title="Upload your file to the presigned URL">
-    Make a `PUT` request directly to the presigned URL returned in the previous step. Do not include your ScaleStack API key — the presigned URL handles authentication on its own.
+    Make a `PUT` request directly to the presigned URL returned in the previous step. Do not include your Scalestack API key — the presigned URL handles authentication on its own.
 
     ```bash
     curl -X PUT "https://s3.amazonaws.com/scalestack-uploads/org_abc123/leads.csv?X-Amz-Signature=..." \
@@ -150,7 +150,7 @@ Importing a file uses a three-step flow: prepare the upload to receive a presign
   </Step>
 
   <Step title="Confirm the upload">
-    After the file is uploaded to S3, notify ScaleStack to begin ingesting it into the dataset.
+    After the file is uploaded to S3, notify Scalestack to begin ingesting it into the dataset.
 
     **Endpoint:** `POST /datasets/organizations/{org_id}/{string_id}/confirm-file-upload/`
 
@@ -167,7 +167,7 @@ Importing a file uses a three-step flow: prepare the upload to receive a presign
       }'
     ```
 
-    ScaleStack will process the CSV in the background. The dataset `status` will be `processing` during ingestion and will transition to `ready` when complete. Poll the [status endpoint](/api-reference/datasets/get#get-dataset-status) to track progress.
+    Scalestack will process the CSV in the background. The dataset `status` will be `processing` during ingestion and will transition to `ready` when complete. Poll the [status endpoint](/api-reference/datasets/get#get-dataset-status) to track progress.
   </Step>
 </Steps>
 

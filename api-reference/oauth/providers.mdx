@@ -1,9 +1,9 @@
 ---
 title: "List available OAuth integration providers"
-description: "List supported OAuth providers and get an authorization URL to connect a third-party service like Salesforce or HubSpot to your ScaleStack organization."
+description: "List supported OAuth providers and get an authorization URL to connect a third-party service like Salesforce or HubSpot to your Scalestack organization."
 ---
 
-ScaleStack integrates with third-party services — such as CRMs, marketing platforms, and data tools — via OAuth. Before you can use these integrations in a workflow, you need to authorize ScaleStack to access your account on the external service. Use these endpoints to discover which providers are available and to initiate the OAuth authorization flow. Once the user approves access in their browser, handle the callback using the [Connections](/api-reference/oauth/connections) endpoint.
+Scalestack integrates with third-party services — such as CRMs, marketing platforms, and data tools — via OAuth. Before you can use these integrations in a workflow, you need to authorize Scalestack to access your account on the external service. Use these endpoints to discover which providers are available and to initiate the OAuth authorization flow. Once the user approves access in their browser, handle the callback using the [Connections](/api-reference/oauth/connections) endpoint.
 
 ## OAuth connection flow
 
@@ -17,10 +17,10 @@ The typical flow for connecting a new OAuth provider looks like this:
     Call `GET /oauth/providers/{service_name}/authorize-url` to retrieve the URL to redirect your user to on the provider's site.
   </Step>
   <Step title="Redirect the user">
-    Send the user to the returned `url`. They will log in and grant ScaleStack the requested permissions.
+    Send the user to the returned `url`. They will log in and grant Scalestack the requested permissions.
   </Step>
   <Step title="Handle the callback">
-    After the user approves access, the provider redirects back to ScaleStack with a `code` and `state`. Pass these to `POST /oauth/callback` to complete the connection. See [Manage OAuth connections](/api-reference/oauth/connections).
+    After the user approves access, the provider redirects back to Scalestack with a `code` and `state`. Pass these to `POST /oauth/callback` to complete the connection. See [Manage OAuth connections](/api-reference/oauth/connections).
   </Step>
 </Steps>
 
@@ -28,7 +28,7 @@ The typical flow for connecting a new OAuth provider looks like this:
 
 ## List OAuth providers
 
-Returns all OAuth providers that ScaleStack supports, along with whether each provider is currently enabled for your organization.
+Returns all OAuth providers that Scalestack supports, along with whether each provider is currently enabled for your organization.
 
 ```
 GET https://backend.scalestack.ai/v2/oauth/providers
@@ -62,7 +62,7 @@ Returns an array of `OAuthProviderSummary` objects.
 </ResponseField>
 
 <ResponseField name="scopes" type="array">
-  The OAuth permission scopes that ScaleStack requests when connecting to this provider.
+  The OAuth permission scopes that Scalestack requests when connecting to this provider.
 </ResponseField>
 
 ### Example response
@@ -114,7 +114,7 @@ curl https://backend.scalestack.ai/v2/oauth/providers/salesforce/authorize-url \
 Returns an `AuthorizeUrlResponse` object.
 
 <ResponseField name="url" type="string">
-  The full authorization URL to redirect the user to. This URL is specific to the provider and includes the necessary OAuth state and client parameters for ScaleStack to complete the connection.
+  The full authorization URL to redirect the user to. This URL is specific to the provider and includes the necessary OAuth state and client parameters for Scalestack to complete the connection.
 </ResponseField>
 
 ### Example response

@@ -1,9 +1,9 @@
 ---
 title: "Copy and use agent templates"
-description: "Copy pre-built agent templates into your organization as configured workflows, then generate AI-powered descriptions for agents using the ScaleStack API."
+description: "Copy pre-built agent templates into your organization as configured workflows, then generate AI-powered descriptions for agents using the Scalestack API."
 ---
 
-Agent templates are pre-built, ready-to-run agent configurations that ScaleStack makes available to all customers. When you copy a template, ScaleStack creates a new workflow in your organization that is already pre-configured with the template's modules — you can run it immediately or adjust the configuration to fit your needs. Template browsing happens in the ScaleStack product UI; the API endpoints let you copy templates programmatically and generate AI-powered descriptions for agents in your organization.
+Agent templates are pre-built, ready-to-run agent configurations that Scalestack makes available to all customers. When you copy a template, Scalestack creates a new workflow in your organization that is already pre-configured with the template's modules — you can run it immediately or adjust the configuration to fit your needs. Template browsing happens in the Scalestack product UI; the API endpoints let you copy templates programmatically and generate AI-powered descriptions for agents in your organization.
 
 ## Copy an agent template
 
@@ -16,7 +16,7 @@ POST https://backend.scalestack.ai/v2/agents/templates/{agent_id}/copy
 ### Path parameters
 
 <ParamField path="agent_id" type="string" required>
-  The ID of the agent template to copy. You can find template IDs in the ScaleStack UI under the Agents section.
+  The ID of the agent template to copy. You can find template IDs in the Scalestack UI under the Agents section.
 </ParamField>
 
 ### Body parameters

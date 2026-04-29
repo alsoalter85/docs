@@ -1,15 +1,15 @@
 ---
-title: "Integrate ScaleStack with Databricks"
-description: "Connect ScaleStack to Databricks to import data from Delta tables into workflows and export enriched results back to Databricks after processing."
+title: "Integrate Scalestack with Databricks"
+description: "Connect Scalestack to Databricks to import data from Delta tables into workflows and export enriched results back to Databricks after processing."
 ---
 
-ScaleStack integrates directly with Databricks, letting you use Delta tables as a data source for workflow enrichment and as a destination for enriched output. This guide walks through listing available tables, inspecting their schemas, importing data from Databricks into a workflow, and exporting enriched results back to a Delta table.
+Scalestack integrates directly with Databricks, letting you use Delta tables as a data source for workflow enrichment and as a destination for enriched output. This guide walks through listing available tables, inspecting their schemas, importing data from Databricks into a workflow, and exporting enriched results back to a Delta table.
 
-<Note>Databricks integration requires your ScaleStack account to be connected to a Databricks workspace. Contact your account team if you haven't configured this connection yet.</Note>
+<Note>Databricks integration requires your Scalestack account to be connected to a Databricks workspace. Contact your account team if you haven't configured this connection yet.</Note>
 
 <Steps>
   <Step title="List available Databricks tables">
-    Retrieve the tables in your connected Databricks workspace that ScaleStack can access. This includes tables across all catalogs and schemas your service principal has read/write permissions to.
+    Retrieve the tables in your connected Databricks workspace that Scalestack can access. This includes tables across all catalogs and schemas your service principal has read/write permissions to.
 
     <CodeGroup>
 
@@ -104,7 +104,7 @@ ScaleStack integrates directly with Databricks, letting you use Delta tables as 
   </Step>
 
   <Step title="Import data from Databricks into a workflow">
-    Trigger an import that reads rows from a Databricks table and loads them into a ScaleStack workflow. You can optionally filter which columns to import or specify a SQL filter clause to limit the rows.
+    Trigger an import that reads rows from a Databricks table and loads them into a Scalestack workflow. You can optionally filter which columns to import or specify a SQL filter clause to limit the rows.
 
     <CodeGroup>
 
@@ -164,7 +164,7 @@ ScaleStack integrates directly with Databricks, letting you use Delta tables as 
   </Step>
 
   <Step title="Export enriched results to Databricks">
-    After your workflow run completes, push the enriched output rows back to a Databricks Delta table. You can write to an existing table (merge or overwrite) or have ScaleStack create a new table.
+    After your workflow run completes, push the enriched output rows back to a Databricks Delta table. You can write to an existing table (merge or overwrite) or have Scalestack create a new table.
 
     <CodeGroup>
 

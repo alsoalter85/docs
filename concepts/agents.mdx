@@ -7,7 +7,7 @@ Agent templates are pre-configured workflow blueprints built for common enrichme
 
 ## How templates relate to workflows
 
-An agent template is a blueprint, not a live workflow. When you copy a template to your organization, ScaleStack creates a new workflow in your account based on that template's configuration. From that point, the new workflow is fully yours — you can add, remove, or reconfigure modules, adjust parameters, and execute it like any other workflow you create.
+An agent template is a blueprint, not a live workflow. When you copy a template to your organization, Scalestack creates a new workflow in your account based on that template's configuration. From that point, the new workflow is fully yours — you can add, remove, or reconfigure modules, adjust parameters, and execute it like any other workflow you create.
 
 ```
 Agent template (shared blueprint)
@@ -20,7 +20,7 @@ Templates are read-only — your customizations never affect the original templa
 
 ## Browsing and copying templates
 
-You can browse available agent templates through the ScaleStack UI or the API. Each template includes a name, description, and the list of modules it contains, so you can evaluate whether it fits your use case before copying.
+You can browse available agent templates through the Scalestack UI or the API. Each template includes a name, description, and the list of modules it contains, so you can evaluate whether it fits your use case before copying.
 
 To copy a template to your organization:
 
@@ -42,7 +42,7 @@ If you're building a custom workflow and want a generated description of what it
 POST https://backend.scalestack.ai/v2/agents/generate-description
 ```
 
-Pass your workflow configuration and ScaleStack returns a plain-language description of the workflow's purpose and what each module contributes.
+Pass your workflow configuration and Scalestack returns a plain-language description of the workflow's purpose and what each module contributes.
 
 ## When to use templates vs. building from scratch
 

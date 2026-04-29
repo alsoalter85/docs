@@ -3,7 +3,7 @@ title: "Delete a workflow — DELETE /workflows/{id}"
 description: "Soft-delete a workflow by ID. The workflow is removed from your active list and its scheduled runs are cancelled. Data may be recoverable by support."
 ---
 
-Deleting a workflow removes it from your active workflow list and prevents it from being executed. This is a **soft delete** — the workflow and its associated data are not immediately destroyed and may be recoverable by contacting ScaleStack support. Any scheduled runs associated with the workflow will be cancelled automatically.
+Deleting a workflow removes it from your active workflow list and prevents it from being executed. This is a **soft delete** — the workflow and its associated data are not immediately destroyed and may be recoverable by contacting Scalestack support. Any scheduled runs associated with the workflow will be cancelled automatically.
 
 ## Request
 
@@ -37,5 +37,5 @@ HTTP/1.1 204 No Content
 </Warning>
 
 <Note>
-  Because this is a soft delete, your workflow data may still be recoverable. If you need to restore a deleted workflow, contact ScaleStack support with the workflow ID (`wf_abc123`) and the approximate deletion time.
+  Because this is a soft delete, your workflow data may still be recoverable. If you need to restore a deleted workflow, contact Scalestack support with the workflow ID (`wf_abc123`) and the approximate deletion time.
 </Note>

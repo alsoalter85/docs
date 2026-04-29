@@ -1,9 +1,9 @@
 ---
 title: "API error codes and responses"
-description: "HTTP status codes returned by the ScaleStack API, error response body formats, and guidance for debugging the most common failure scenarios."
+description: "HTTP status codes returned by the Scalestack API, error response body formats, and guidance for debugging the most common failure scenarios."
 ---
 
-When a request to the ScaleStack API fails, the response includes an HTTP status code that indicates the category of the problem, and a JSON body with details to help you diagnose the issue. Understanding the error format and what each status code means will help you write more resilient integrations and debug issues faster.
+When a request to the Scalestack API fails, the response includes an HTTP status code that indicates the category of the problem, and a JSON body with details to help you diagnose the issue. Understanding the error format and what each status code means will help you write more resilient integrations and debug issues faster.
 
 ## HTTP status codes
 
@@ -19,7 +19,7 @@ The following table lists all status codes the API returns and what they mean.
 | `404` | Not Found | The requested resource does not exist. Check the ID or path in your request. |
 | `422` | Unprocessable Entity | The request body passed schema validation but contained logically invalid data. The response body includes field-level error details. |
 | `429` | Too Many Requests | You have exceeded the API rate limit. Wait and retry with exponential backoff. |
-| `500` | Internal Server Error | An unexpected error occurred on the server. If this persists, contact ScaleStack support. |
+| `500` | Internal Server Error | An unexpected error occurred on the server. If this persists, contact Scalestack support. |
 
 ## Error response formats
 
@@ -107,7 +107,7 @@ Each object in the `detail` array is a `ValidationError` with the following fiel
 ### Server errors (500)
 
 - Retry the request after a short delay. Transient server errors often resolve on their own.
-- If the error persists across multiple retries, contact ScaleStack support with the request details and timestamp.
+- If the error persists across multiple retries, contact Scalestack support with the request details and timestamp.
 
 <Warning>
 Do not retry failed `4xx` requests indefinitely. A `400`, `401`, `403`, or `422` indicates a problem with your request that will not resolve on its own. Fix the underlying issue before retrying.

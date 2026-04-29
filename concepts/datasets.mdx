@@ -1,9 +1,9 @@
 ---
-title: "Datasets: structured data objects in ScaleStack"
-description: "Datasets are persistent tabular data in ScaleStack. Learn how they differ from workflow output, how to create and populate them, and how deduplication works."
+title: "Datasets: structured data objects in Scalestack"
+description: "Datasets are persistent tabular data in Scalestack. Learn how they differ from workflow output, how to create and populate them, and how deduplication works."
 ---
 
-A dataset is a standalone tabular data object — a collection of rows and columns — that lives in your ScaleStack organization. Datasets are distinct from workflow run data: while workflow runs hold the enriched output of a specific execution, datasets are persistent objects you create, manage, and reuse across multiple workflows or outside of workflows entirely. You can upload a CSV, push rows via API, or populate a dataset from a workflow run.
+A dataset is a standalone tabular data object — a collection of rows and columns — that lives in your Scalestack organization. Datasets are distinct from workflow run data: while workflow runs hold the enriched output of a specific execution, datasets are persistent objects you create, manage, and reuse across multiple workflows or outside of workflows entirely. You can upload a CSV, push rows via API, or populate a dataset from a workflow run.
 
 ## Datasets vs. workflow data
 
@@ -52,7 +52,7 @@ GET https://backend.scalestack.ai/v2/datasets/organizations/{org_id}/
 
 ## Deduplication
 
-Datasets support deduplication to prevent duplicate rows from accumulating over time. When you configure a deduplication key (one or more columns that uniquely identify a record), ScaleStack will skip or overwrite existing rows when you push new data that matches on that key.
+Datasets support deduplication to prevent duplicate rows from accumulating over time. When you configure a deduplication key (one or more columns that uniquely identify a record), Scalestack will skip or overwrite existing rows when you push new data that matches on that key.
 
 <Note>
   Deduplication is applied at write time. If you import rows without a deduplication key configured, all rows are inserted regardless of existing data.
@@ -64,7 +64,7 @@ You can download the full contents of any dataset as a CSV file at any time. Thi
 
 ## Public datasets
 
-ScaleStack supports making a dataset publicly accessible via a shareable link. When you enable public sharing, anyone with the link can access the dataset at:
+Scalestack supports making a dataset publicly accessible via a shareable link. When you enable public sharing, anyone with the link can access the dataset at:
 
 ```http
 GET https://backend.scalestack.ai/v2/datasets/public/{id}/

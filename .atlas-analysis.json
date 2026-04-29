@@ -1,7 +1,7 @@
 {
   "projectType": "api-service",
-  "projectName": "ScaleStack",
-  "projectDescription": "ScaleStack is an AI-powered data enrichment and workflow automation platform that lets teams build, execute, and manage data pipelines using composable modules and agent templates.",
+  "projectName": "Scalestack",
+  "projectDescription": "Scalestack is an AI-powered data enrichment and workflow automation platform that lets teams build, execute, and manage data pipelines using composable modules and agent templates.",
   "theme": "luma",
   "primaryColor": "#1A1A2E",
   "lightColor": "#F5F5F5",

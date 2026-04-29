@@ -3,17 +3,17 @@ title: "Import files and deduplicate dataset records"
 description: "Upload CSV files to create datasets using a presigned S3 flow, then identify and remove duplicate records with configurable deduplication."
 ---
 
-ScaleStack provides two powerful data quality tools for managing dataset contents: a file import flow that uses presigned S3 URLs for efficient and secure uploads, and a deduplication engine that identifies redundant records based on columns you specify. This page covers both end-to-end workflows.
+Scalestack provides two powerful data quality tools for managing dataset contents: a file import flow that uses presigned S3 URLs for efficient and secure uploads, and a deduplication engine that identifies redundant records based on columns you specify. This page covers both end-to-end workflows.
 
 ---
 
 ## Import a file
 
-Importing a CSV file into a dataset uses a three-step flow. You prepare the upload to receive a presigned URL, PUT your file directly to S3, then confirm the upload to trigger ScaleStack's ingestion pipeline.
+Importing a CSV file into a dataset uses a three-step flow. You prepare the upload to receive a presigned URL, PUT your file directly to S3, then confirm the upload to trigger Scalestack's ingestion pipeline.
 
 <Steps>
   <Step title="Prepare the upload">
-    Register your file with ScaleStack to receive a short-lived presigned upload URL and a dataset ID.
+    Register your file with Scalestack to receive a short-lived presigned upload URL and a dataset ID.
 
     **Endpoint:** `POST /datasets/organizations/{org_id}/from-file/`
 
@@ -58,7 +58,7 @@ Importing a CSV file into a dataset uses a three-step flow. You prepare the uplo
   </Step>
 
   <Step title="Upload the file to S3">
-    Use the `upload_url` from the previous step to PUT your file directly to S3. Do not include your ScaleStack `Authorization` header — the presigned URL handles authentication on its own.
+    Use the `upload_url` from the previous step to PUT your file directly to S3. Do not include your Scalestack `Authorization` header — the presigned URL handles authentication on its own.
 
     ```bash
     curl -X PUT "https://s3.amazonaws.com/scalestack-uploads/org_abc123/leads.csv?X-Amz-Signature=abc123..." \
@@ -74,7 +74,7 @@ Importing a CSV file into a dataset uses a three-step flow. You prepare the uplo
   </Step>
 
   <Step title="Confirm the upload">
-    Notify ScaleStack that the file is in S3 and ready to be ingested. This triggers the background processing pipeline.
+    Notify Scalestack that the file is in S3 and ready to be ingested. This triggers the background processing pipeline.
 
     **Endpoint:** `POST /datasets/organizations/{org_id}/{string_id}/confirm-file-upload/`
 

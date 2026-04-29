@@ -1,13 +1,13 @@
 ---
 title: "Modules: composable enrichment steps"
-description: "Modules are composable enrichment steps in a ScaleStack workflow. Each appends output columns to rows. Learn how to browse, configure, and chain them."
+description: "Modules are composable enrichment steps in a Scalestack workflow. Each appends output columns to rows. Learn how to browse, configure, and chain them."
 ---
 
 A module is a single, self-contained enrichment step. When you build a workflow, you assemble it from one or more modules — each one takes input from your data, performs a specific task (such as looking up a company's industry, finding a contact's email, or scoring a lead), and appends its results as new columns. Modules are designed to be composable: the output columns of one module can feed into the inputs of the next, letting you build sophisticated enrichment pipelines from simple, reusable parts.
 
 ## How modules fit into a workflow
 
-Every workflow is an ordered list of modules. ScaleStack runs each module in sequence for every row in your input data. The data grows wider as it moves through the pipeline — each module adds columns, and the final output contains all original input columns plus every column added by every module.
+Every workflow is an ordered list of modules. Scalestack runs each module in sequence for every row in your input data. The data grows wider as it moves through the pipeline — each module adds columns, and the final output contains all original input columns plus every column added by every module.
 
 ```
 Input row: { company_name, domain }

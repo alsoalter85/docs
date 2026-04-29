@@ -1,9 +1,9 @@
 ---
-title: "Get started with ScaleStack"
-description: "Run your first ScaleStack enrichment workflow end-to-end: get an API key, create a workflow, add input data, execute it, and fetch the results."
+title: "Get started with Scalestack"
+description: "Run your first Scalestack enrichment workflow end-to-end: get an API key, create a workflow, add input data, execute it, and fetch the results."
 ---
 
-This guide walks you through the full lifecycle of a ScaleStack workflow using the REST API. By the end you will have created a workflow, pushed input data, triggered a run, and retrieved enriched output. All examples use `curl`, but you can use any HTTP client.
+This guide walks you through the full lifecycle of a Scalestack workflow using the REST API. By the end you will have created a workflow, pushed input data, triggered a run, and retrieved enriched output. All examples use `curl`, but you can use any HTTP client.
 
 <Note>
   Replace `<your_api_key>` with your actual API key throughout this guide. See [Authentication](/authentication) for instructions on finding your key.
@@ -13,7 +13,7 @@ This guide walks you through the full lifecycle of a ScaleStack workflow using t
 
 <Step title="Get your API key">
 
-Sign in to your ScaleStack account and go to **Organization Settings → API**. Copy your API key — you will pass it as a Bearer token in every request.
+Sign in to your Scalestack account and go to **Organization Settings → API**. Copy your API key — you will pass it as a Bearer token in every request.
 
 Verify the key is working by calling `GET /users/`:
 
@@ -61,7 +61,7 @@ Expected response:
 Save the `id` — you will use it in every subsequent step. In the examples below it is referred to as `<workflow_id>`.
 
 <Tip>
-  You can also create and configure workflows in the ScaleStack UI, then use the API only for execution and data retrieval.
+  You can also create and configure workflows in the Scalestack UI, then use the API only for execution and data retrieval.
 </Tip>
 
 </Step>
@@ -97,7 +97,7 @@ Expected response:
 
 <Step title="Execute the workflow">
 
-Trigger a run with `POST /workflows/{workflow_id}/execute`. ScaleStack processes your input rows through each module in the workflow and writes the enriched output.
+Trigger a run with `POST /workflows/{workflow_id}/execute`. Scalestack processes your input rows through each module in the workflow and writes the enriched output.
 
 ```bash curl
 curl --request POST "https://backend.scalestack.ai/v2/workflows/<workflow_id>/execute" \
@@ -152,7 +152,7 @@ Example response when finished:
 ```
 
 <Tip>
-  For real-time status updates without polling, use the ScaleStack WebSocket API. See [WebSockets](/websockets/overview) for details.
+  For real-time status updates without polling, use the Scalestack WebSocket API. See [WebSockets](/websockets/overview) for details.
 </Tip>
 
 <Warning>

@@ -1,13 +1,13 @@
 ---
 title: "Connect third-party integrations via OAuth"
-description: "Connect services like Salesforce and HubSpot to ScaleStack using OAuth so your workflows can read from and write to those platforms automatically."
+description: "Connect services like Salesforce and HubSpot to Scalestack using OAuth so your workflows can read from and write to those platforms automatically."
 ---
 
-ScaleStack supports OAuth 2.0 connections to third-party platforms such as Salesforce, HubSpot, and others. Once connected, those integrations become available as inputs and outputs inside your workflow modules — for example, pulling contact records from HubSpot or pushing enriched data back to Salesforce. This guide walks through the full OAuth connection flow using the ScaleStack API.
+Scalestack supports OAuth 2.0 connections to third-party platforms such as Salesforce, HubSpot, and others. Once connected, those integrations become available as inputs and outputs inside your workflow modules — for example, pulling contact records from HubSpot or pushing enriched data back to Salesforce. This guide walks through the full OAuth connection flow using the Scalestack API.
 
 <Steps>
   <Step title="List available OAuth providers">
-    Start by retrieving the list of OAuth providers that ScaleStack supports. Each provider has a `service_name` you'll use in subsequent steps.
+    Start by retrieving the list of OAuth providers that Scalestack supports. Each provider has a `service_name` you'll use in subsequent steps.
 
     <CodeGroup>
 
@@ -56,7 +56,7 @@ ScaleStack supports OAuth 2.0 connections to third-party platforms such as Sales
   </Step>
 
   <Step title="Get the authorization URL">
-    Retrieve the authorization URL for the provider you want to connect. ScaleStack generates a unique URL that includes the OAuth state parameter to prevent CSRF attacks.
+    Retrieve the authorization URL for the provider you want to connect. Scalestack generates a unique URL that includes the OAuth state parameter to prevent CSRF attacks.
 
     <CodeGroup>
 
@@ -100,9 +100,9 @@ ScaleStack supports OAuth 2.0 connections to third-party platforms such as Sales
   </Step>
 
   <Step title="Handle the OAuth callback">
-    After the user approves the connection, the provider redirects to ScaleStack's callback URL with a `code` and `state` parameter. ScaleStack's backend handles the token exchange automatically when you call the callback endpoint.
+    After the user approves the connection, the provider redirects to Scalestack's callback URL with a `code` and `state` parameter. Scalestack's backend handles the token exchange automatically when you call the callback endpoint.
 
-    If you are building a custom integration where you receive the callback directly, pass the authorization code and state to ScaleStack:
+    If you are building a custom integration where you receive the callback directly, pass the authorization code and state to Scalestack:
 
     <CodeGroup>
 
@@ -150,7 +150,7 @@ ScaleStack supports OAuth 2.0 connections to third-party platforms such as Sales
     }
     ```
 
-    ScaleStack stores the OAuth tokens securely. You will never need to handle or store access tokens yourself.
+    Scalestack stores the OAuth tokens securely. You will never need to handle or store access tokens yourself.
   </Step>
 
   <Step title="List active connections">
@@ -204,7 +204,7 @@ ScaleStack supports OAuth 2.0 connections to third-party platforms such as Sales
   </Step>
 
   <Step title="Disconnect an integration">
-    To revoke ScaleStack's access to a third-party service, disconnect the connection. This removes the stored tokens and prevents any further use of the integration.
+    To revoke Scalestack's access to a third-party service, disconnect the connection. This removes the stored tokens and prevents any further use of the integration.
 
     <CodeGroup>
 

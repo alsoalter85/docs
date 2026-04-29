@@ -1,9 +1,9 @@
 ---
-title: "Real-time updates with ScaleStack WebSockets"
-description: "Connect to ScaleStack WebSockets for live workflow status updates, import progress, and real-time events — without polling the REST API."
+title: "Real-time updates with Scalestack WebSockets"
+description: "Connect to Scalestack WebSockets for live workflow status updates, import progress, and real-time events — without polling the REST API."
 ---
 
-ScaleStack exposes WebSocket connections so your application can receive live updates as workflow runs change state, enrichment jobs progress, and other events occur. Instead of repeatedly calling a REST endpoint to check status, you open a persistent connection and receive messages the moment something changes. This approach reduces latency, lowers API usage, and makes it straightforward to build reactive interfaces or automation triggers.
+Scalestack exposes WebSocket connections so your application can receive live updates as workflow runs change state, enrichment jobs progress, and other events occur. Instead of repeatedly calling a REST endpoint to check status, you open a persistent connection and receive messages the moment something changes. This approach reduces latency, lowers API usage, and makes it straightforward to build reactive interfaces or automation triggers.
 
 ## When to use WebSockets vs polling
 
@@ -47,7 +47,7 @@ const endpoint = info.endpoints.find(e => e.type === 'workflow_runs');
 const ws = new WebSocket(`${endpoint.url}?token=<your_api_key>`);
 
 ws.addEventListener('open', () => {
-  console.log('Connected to ScaleStack WebSocket');
+  console.log('Connected to Scalestack WebSocket');
 });
 
 ws.addEventListener('message', (event) => {
@@ -87,7 +87,7 @@ async def connect():
     ws_url = f"{endpoint['url']}?token={API_KEY}"
 
     async with websockets.connect(ws_url) as ws:
-        print("Connected to ScaleStack WebSocket")
+        print("Connected to Scalestack WebSocket")
         async for raw_message in ws:
             data = json.loads(raw_message)
             handle_status_update(data)

@@ -1,17 +1,17 @@
 ---
-title: "Import data into a ScaleStack workflow"
-description: "Load data into a ScaleStack workflow using CSV file upload via a presigned S3 URL or by pushing JSON rows directly through the API import endpoint."
+title: "Import data into a Scalestack workflow"
+description: "Load data into a Scalestack workflow using CSV file upload via a presigned S3 URL or by pushing JSON rows directly through the API import endpoint."
 ---
 
-Before a workflow can run, it needs input data. ScaleStack supports two import methods: uploading a CSV file through a presigned S3 URL, or pushing rows directly as JSON through the API. Use the CSV method when you have an existing file to upload; use the API method when you're generating rows programmatically or integrating with another system.
+Before a workflow can run, it needs input data. Scalestack supports two import methods: uploading a CSV file through a presigned S3 URL, or pushing rows directly as JSON through the API. Use the CSV method when you have an existing file to upload; use the API method when you're generating rows programmatically or integrating with another system.
 
 ## Method 1: CSV file upload
 
-Uploading a CSV file is a three-step process: request a presigned upload URL, PUT your file directly to S3, then confirm the upload so ScaleStack can process it.
+Uploading a CSV file is a three-step process: request a presigned upload URL, PUT your file directly to S3, then confirm the upload so Scalestack can process it.
 
 <Steps>
   <Step title="Request a presigned upload URL">
-    Call the upload URL endpoint to get a temporary S3 presigned URL. Include the filename and MIME type so ScaleStack can configure the upload correctly.
+    Call the upload URL endpoint to get a temporary S3 presigned URL. Include the filename and MIME type so Scalestack can configure the upload correctly.
 
     <CodeGroup>
 
@@ -83,7 +83,7 @@ Uploading a CSV file is a three-step process: request a presigned upload URL, PU
   </Step>
 
   <Step title="Confirm the upload">
-    After the file reaches S3, tell ScaleStack to process it by confirming the upload. Pass the `upload_id` from step 1.
+    After the file reaches S3, tell Scalestack to process it by confirming the upload. Pass the `upload_id` from step 1.
 
     <CodeGroup>
 

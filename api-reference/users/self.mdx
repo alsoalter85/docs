@@ -1,9 +1,9 @@
 ---
-title: "Manage your ScaleStack user profile"
+title: "Manage your Scalestack user profile"
 description: "Retrieve your current user details, update your display name and username, upload or remove a profile picture, and access your full user record."
 ---
 
-The user profile endpoints let you read and update information associated with your ScaleStack account. You can retrieve your basic profile, apply updates to your name and username, and manage your profile picture. All endpoints operate on the authenticated user — the account identified by your API key.
+The user profile endpoints let you read and update information associated with your Scalestack account. You can retrieve your basic profile, apply updates to your name and username, and manage your profile picture. All endpoints operate on the authenticated user — the account identified by your API key.
 
 ## Get current user
 
@@ -25,7 +25,7 @@ curl https://backend.scalestack.ai/v2/users/ \
 Returns a `UserSelfResponse` object.
 
 <ResponseField name="id" type="string">
-  The unique identifier for your ScaleStack user account.
+  The unique identifier for your Scalestack user account.
 </ResponseField>
 
 <ResponseField name="email" type="string">
@@ -37,7 +37,7 @@ Returns a `UserSelfResponse` object.
 </ResponseField>
 
 <ResponseField name="username" type="string">
-  Your unique username within ScaleStack.
+  Your unique username within Scalestack.
 </ResponseField>
 
 <ResponseField name="picture" type="string">
@@ -99,7 +99,7 @@ PATCH https://backend.scalestack.ai/v2/users/
 </ParamField>
 
 <ParamField body="username" type="string">
-  Your new username. Must be unique across all ScaleStack accounts.
+  Your new username. Must be unique across all Scalestack accounts.
 </ParamField>
 
 ### Example request

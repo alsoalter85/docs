@@ -3,7 +3,7 @@ title: "Manage OAuth connections"
 description: "Complete the OAuth callback, list your active third-party connections, disconnect a provider, and retrieve a runtime token for use inside a workflow module."
 ---
 
-After a user authorizes ScaleStack to access a third-party service, the provider redirects them back with a `code` and `state`. You pass these to the callback endpoint to complete the connection and store it in your organization. You can then view all active connections, disconnect ones you no longer need, and retrieve short-lived runtime tokens that workflow modules use to authenticate against the external service during a run.
+After a user authorizes Scalestack to access a third-party service, the provider redirects them back with a `code` and `state`. You pass these to the callback endpoint to complete the connection and store it in your organization. You can then view all active connections, disconnect ones you no longer need, and retrieve short-lived runtime tokens that workflow modules use to authenticate against the external service during a run.
 
 ## Complete the OAuth callback
 
@@ -20,7 +20,7 @@ POST https://backend.scalestack.ai/v2/oauth/callback
 </ParamField>
 
 <ParamField body="state" type="string" required>
-  The state parameter returned by the provider. ScaleStack uses this to validate the callback and associate it with the original authorization request.
+  The state parameter returned by the provider. Scalestack uses this to validate the callback and associate it with the original authorization request.
 </ParamField>
 
 <ParamField body="service_name" type="string" required>
@@ -61,7 +61,7 @@ Returns a `ConnectionSummary` object for the newly established connection.
 </ResponseField>
 
 <ResponseField name="user_id" type="string">
-  The ID of the ScaleStack user who authorized this connection.
+  The ID of the Scalestack user who authorized this connection.
 </ResponseField>
 
 ### Example response
@@ -192,5 +192,5 @@ curl https://backend.scalestack.ai/v2/oauth/connections/conn_sf_4829a/token \
 ```
 
 <Note>
-  Runtime tokens are automatically managed by ScaleStack during workflow execution. You only need this endpoint if you are making direct API calls to a connected service outside of a workflow run.
+  Runtime tokens are automatically managed by Scalestack during workflow execution. You only need this endpoint if you are making direct API calls to a connected service outside of a workflow run.
 </Note>
